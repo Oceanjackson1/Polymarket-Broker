@@ -4,6 +4,8 @@ from core.polymarket.gamma_client import GammaClient
 from core.polymarket.clob_client import ClobClient
 from core.polymarket.eip712 import build_order_struct
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
 
 async def test_gamma_get_markets_returns_list():
     client = GammaClient()

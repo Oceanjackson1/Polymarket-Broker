@@ -13,6 +13,13 @@ class Base(DeclarativeBase):
     pass
 
 
+# Register all ORM models so Base.metadata includes their tables
+def _register_models():
+    from api.auth.models import User, ApiKey, RefreshToken  # noqa: F401
+
+_register_models()
+
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

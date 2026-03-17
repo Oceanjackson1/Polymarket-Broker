@@ -56,6 +56,8 @@ def decode_refresh_token(token: str) -> dict:
     payload = _decode_token(token)
     if payload.get("type") != "refresh":
         raise ValueError("Invalid token: not a refresh token")
+    if "jti" not in payload:
+        raise ValueError("Invalid token: missing jti")
     return payload
 
 

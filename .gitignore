@@ -1,5 +1,6 @@
 .env
-.env.test
+# .env.test is committed intentionally (test-only values, no real secrets)
+!.env.test
 .venv/
 venv/
 __pycache__/

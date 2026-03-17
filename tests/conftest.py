@@ -21,6 +21,7 @@ async def setup_test_db():
     # Import models so Base.metadata knows about them (models created in Task 5)
     try:
         from api.auth.models import User, ApiKey, RefreshToken  # noqa: F401
+        from api.orders.models import Order  # noqa: F401
     except ImportError:
         pass
 

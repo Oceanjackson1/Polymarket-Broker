@@ -1,6 +1,5 @@
 import pytest
 from sqlalchemy import text
-import pytest
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 

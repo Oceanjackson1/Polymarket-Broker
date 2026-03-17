@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+import redis.asyncio as aioredis
 
 from db.postgres import get_session
+from db.redis_client import get_redis
 from api.deps import get_current_user_id
 from api.auth.service import AuthService
 from api.auth.schemas import (
@@ -48,3 +50,24 @@ async def delete_key(
 ):
     await AuthService(db).delete_api_key(user_id, key_id)
     return Response(status_code=204)
+
+
+@router.post("/wallet/challenge")
+async def wallet_challenge(
+    body: dict,
+    db: AsyncSession = Depends(get_session),
+    redis: aioredis.Redis = Depends(get_redis),
+):
+    return await AuthService(db).create_wallet_challenge(body["wallet_address"], redis)
+
+
+@router.post("/wallet/verify", response_model=TokenResponse)
+async def wallet_verify(
+    body: dict,
+    db: AsyncSession = Depends(get_session),
+    redis: aioredis.Redis = Depends(get_redis),
+):
+    tokens = await AuthService(db).verify_wallet_signature(
+        body["wallet_address"], body["signature"], redis
+    )
+    return {**tokens, "token_type": "bearer"}

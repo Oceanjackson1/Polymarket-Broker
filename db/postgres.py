@@ -16,6 +16,7 @@ class Base(DeclarativeBase):
 # Register all ORM models so Base.metadata includes their tables
 def _register_models():
     from api.auth.models import User, ApiKey, RefreshToken  # noqa: F401
+    from api.orders.models import Order  # noqa: F401
 
 _register_models()
 

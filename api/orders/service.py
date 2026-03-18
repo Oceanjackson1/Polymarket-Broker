@@ -197,3 +197,119 @@ class OrderService:
             order.status = "CANCELLED"
         await self.db.commit()
         return len(orders)
+
+    async def build_order(
+        self,
+        user_id: str,
+        tier: str,
+        market_id: str,
+        token_id: str,
+        side: str,
+        price: float,
+        size: float,
+        redis: "aioredis.Redis",
+    ) -> dict:
+        """Non-custodial mode: build EIP-712 payload and store params in Redis."""
+        import json as _json
+        # Risk check
+        validate_order_size(tier, size=size, price=price)
+
+        fee_bps = get_fee_rate_bps(tier)
+        nonce = secrets.randbelow(2**32)
+
+        order_struct = build_order_struct(
+            maker=settings.polymarket_fee_address or "0x0000000000000000000000000000000000000000",
+            token_id=token_id,
+            price=price,
+            size=size,
+            side=side,
+            fee_rate_bps=fee_bps,
+            nonce=nonce,
+        )
+
+        # Canonical JSON of the payload (sorted keys for determinism)
+        payload_json = _json.dumps(order_struct, sort_keys=True)
+        payload_hash = hashlib.sha256(payload_json.encode()).hexdigest()
+
+        # Store build params in Redis for 60 seconds
+        redis_key = f"order_build:{user_id}:{payload_hash}"
+        build_params = {
+            "market_id": market_id,
+            "token_id": token_id,
+            "side": side,
+            "price": str(price),
+            "size": str(size),
+            "fee_bps": fee_bps,
+            "nonce": nonce,
+            "order_struct": order_struct,
+        }
+        await redis.set(redis_key, _json.dumps(build_params), ex=60)
+
+        return {"eip712_payload": order_struct, "payload_hash": payload_hash}
+
+    async def submit_order(
+        self,
+        user_id: str,
+        payload_hash: str,
+        signature: str,
+        redis: "aioredis.Redis",
+    ) -> Order:
+        """Non-custodial mode: verify stored hash, verify signature, broadcast."""
+        import json as _json
+        from eth_account import Account
+        from eth_account.messages import encode_defunct
+
+        redis_key = f"order_build:{user_id}:{payload_hash}"
+        stored_raw = await redis.get(redis_key)
+        if not stored_raw:
+            raise ValueError("PAYLOAD_HASH_NOT_FOUND_OR_EXPIRED")
+
+        build_params = _json.loads(stored_raw)
+        order_struct = build_params["order_struct"]
+
+        # Re-derive hash to verify tamper protection
+        payload_json = _json.dumps(order_struct, sort_keys=True)
+        expected_hash = hashlib.sha256(payload_json.encode()).hexdigest()
+        if expected_hash != payload_hash:
+            raise ValueError("PAYLOAD_HASH_MISMATCH")
+
+        # Verify the user's signature against the payload JSON
+        msg = encode_defunct(text=payload_json)
+        try:
+            Account.recover_message(msg, signature=signature)
+        except Exception as exc:
+            raise ValueError("INVALID_SIGNATURE") from exc
+
+        # Delete the Redis key (single-use)
+        await redis.delete(redis_key)
+
+        fee_bps = build_params["fee_bps"]
+
+        # Submit to CLOB (user already signed — we submit as-is with their signature)
+        clob = ClobClient()
+        signed_struct = {**order_struct, "signature": signature}
+        try:
+            clob_resp = await clob.post_order(signed_struct, api_key="")
+        except Exception as e:
+            raise ValueError(f"CLOB_SUBMISSION_FAILED: {e}") from e
+
+        polymarket_order_id = clob_resp.get("orderID") or clob_resp.get("order_id")
+
+        # Persist to PostgreSQL
+        order = Order(
+            user_id=user_id,
+            market_id=build_params["market_id"],
+            token_id=build_params["token_id"],
+            side=build_params["side"],
+            type="LIMIT",
+            price=float(build_params["price"]),
+            size=float(build_params["size"]),
+            broker_fee_bps=fee_bps,
+            polymarket_order_id=polymarket_order_id,
+            status="OPEN",
+            mode="noncustodial",
+        )
+        self.db.add(order)
+        await self.db.commit()
+        await self.db.refresh(order)
+        return order

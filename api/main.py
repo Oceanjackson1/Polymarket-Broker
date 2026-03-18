@@ -10,6 +10,7 @@ from api.auth.router import router as auth_router
 from api.markets.router import router as markets_router
 from api.orders.router import router as orders_router
 from api.portfolio.router import router as portfolio_router
+from api.data.sports.router import router as sports_data_router
 
 settings = get_settings()
 
@@ -34,3 +35,4 @@ app.include_router(auth_router, prefix=settings.api_v1_prefix)
 app.include_router(markets_router, prefix=settings.api_v1_prefix)
 app.include_router(orders_router, prefix=settings.api_v1_prefix)
 app.include_router(portfolio_router, prefix=settings.api_v1_prefix)
+app.include_router(sports_data_router, prefix=settings.api_v1_prefix)

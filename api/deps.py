@@ -36,3 +36,9 @@ async def get_current_user_from_api_key(
     if user is None or not user.is_active:
         raise HTTPException(401, detail="User account inactive")
     return {"user_id": user.id, "tier": user.tier, "scopes": api_key_row.scopes}
+
+
+def require_scope(auth: dict, scope: str) -> None:
+    """Raise HTTP 403 if the required scope is not present in auth['scopes']."""
+    if scope not in auth.get("scopes", []):
+        raise HTTPException(403, detail=f"SCOPE_REQUIRED: {scope}")

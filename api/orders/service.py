@@ -274,11 +274,22 @@ class OrderService:
             raise ValueError("PAYLOAD_HASH_MISMATCH")
 
         # Verify the user's signature against the payload JSON
+        from sqlalchemy import select as _select
+        from api.auth.models import User as _User
+
         msg = encode_defunct(text=payload_json)
         try:
-            Account.recover_message(msg, signature=signature)
+            recovered_address = Account.recover_message(msg, signature=signature)
         except Exception as exc:
             raise ValueError("INVALID_SIGNATURE") from exc
+
+        # Verify the signer matches the authenticated user's wallet address
+        user = await self.db.scalar(_select(_User).where(_User.id == user_id))
+        if user and user.wallet_address:
+            if recovered_address.lower() != user.wallet_address.lower():
+                raise ValueError("SIGNER_WALLET_MISMATCH")
+        # Note: If user has no wallet_address (email-only account), skip the check.
+        # In production, build_order should be restricted to wallet-authenticated users.
 
         # Delete the Redis key (single-use)
         await redis.delete(redis_key)

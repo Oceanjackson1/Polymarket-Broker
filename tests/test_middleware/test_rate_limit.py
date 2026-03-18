@@ -31,3 +31,5 @@ async def test_rate_limit_returns_429_when_exceeded(client, test_redis):
     resp = await client.get("/api/v1/auth/keys", headers={"Authorization": "Bearer invalid"})
     assert resp.status_code == 429
     assert resp.json()["error"]["code"] == "RATE_LIMIT_EXCEEDED"
+    # Reset the counter so subsequent tests are not rate-limited
+    await test_redis.delete(_RATE_LIMIT_KEY)

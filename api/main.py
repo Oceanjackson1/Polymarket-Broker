@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
@@ -21,7 +22,27 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     await init_db()
     app.state.redis = await get_redis_pool()
+
+    tasks = []
+    if not settings.disable_collectors:
+        from data_pipeline.sports_collector import SportsCollector
+        from data_pipeline.nba_collector import NbaCollector
+        from data_pipeline.btc_collector import BtcCollector
+        from db.postgres import AsyncSessionLocal
+
+        tasks = [
+            asyncio.create_task(SportsCollector().run(AsyncSessionLocal)),
+            asyncio.create_task(NbaCollector().run(AsyncSessionLocal)),
+            asyncio.create_task(BtcCollector().run(AsyncSessionLocal)),
+        ]
+
     yield
+
+    for t in tasks:
+        t.cancel()
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+
     await app.state.redis.aclose()
 
 

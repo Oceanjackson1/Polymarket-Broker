@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     polymarket_rpc_url: str = "https://polygon-rpc.com/"
     polymarket_fee_address: str = ""
 
+    # Data Pipeline
+    espn_api_base: str = "https://site.api.espn.com"
+    coingecko_api_base: str = "https://api.coingecko.com"
+    disable_collectors: bool = False
+
     # App
     environment: str = "development"
     api_v1_prefix: str = "/api/v1"

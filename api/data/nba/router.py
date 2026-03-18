@@ -1,4 +1,5 @@
 # api/data/nba/router.py
+import base64
 from datetime import datetime, UTC, date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,7 +37,6 @@ async def list_nba_games(
     db: AsyncSession = Depends(get_session),
 ):
     require_scope(auth, "data:read")
-    import base64
     conditions = []
     target_date = game_date or date.today()
     conditions.append(NbaGame.game_date == target_date)

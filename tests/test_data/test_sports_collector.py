@@ -22,11 +22,11 @@ async def test_sports_collector_upserts_market(test_db_session):
         }
     ]
 
-    collector = SportsCollector()
     with patch("data_pipeline.sports_collector.GammaClient") as MockGamma:
         inst = MockGamma.return_value
         # First call returns markets, second call returns empty (stop pagination)
         inst.get_markets = AsyncMock(side_effect=[mock_markets, []])
+        collector = SportsCollector()
         await collector.collect(test_db_session)
 
     result = await test_db_session.scalar(
@@ -48,11 +48,11 @@ async def test_sports_collector_upsert_is_idempotent(test_db_session):
         {"id": "mkt_nba_test_002", "question": "Q2", "active": True, "tags": ["nba"], "outcomes": []}
     ]
 
-    collector = SportsCollector()
     for _ in range(2):
         with patch("data_pipeline.sports_collector.GammaClient") as MockGamma:
             inst = MockGamma.return_value
             inst.get_markets = AsyncMock(side_effect=[mock_markets, []])
+            collector = SportsCollector()
             await collector.collect(test_db_session)
 
     count = await test_db_session.scalar(

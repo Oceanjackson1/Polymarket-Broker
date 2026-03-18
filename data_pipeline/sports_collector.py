@@ -22,8 +22,11 @@ class SportsCollector(BaseCollector):
     name = "sports_collector"
     interval_seconds = 300
 
+    def __init__(self):
+        self._gamma = GammaClient()
+
     async def collect(self, db: AsyncSession) -> None:
-        client = GammaClient()
+        client = self._gamma
         offset = 0
         while True:
             markets = await client.get_markets(

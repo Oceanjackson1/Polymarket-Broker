@@ -47,3 +47,22 @@ def test_eip712_buy_amounts():
     # BUY: makerAmount = size * price * 10^6, takerAmount = size * 10^6
     assert order["makerAmount"] == str(int(200.0 * 0.5 * 1_000_000))
     assert order["takerAmount"] == str(int(200.0 * 1_000_000))
+
+
+def test_sign_order_struct_adds_signature():
+    # Use a well-known test private key (not used in production)
+    test_private_key = "0x0000000000000000000000000000000000000000000000000000000000000001"
+    from core.polymarket.eip712 import build_order_struct, sign_order_struct
+    order = build_order_struct(
+        maker="0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+        token_id="21742633",
+        price=0.5,
+        size=100.0,
+        side="BUY",
+        fee_rate_bps=10,
+        nonce=0,
+    )
+    signed = sign_order_struct(order, private_key=test_private_key, chain_id=137)
+    assert "signature" in signed
+    assert signed["signature"].startswith("0x")
+    assert len(signed["signature"]) == 132  # 65 bytes = 130 hex chars + "0x"

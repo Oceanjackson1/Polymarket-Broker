@@ -34,4 +34,8 @@ class BaseCollector:
                 raise
             except Exception as e:
                 logger.error(f"[{self.name}] collect failed: {e}")
+        try:
             await asyncio.sleep(self.interval_seconds)
+        except asyncio.CancelledError:
+            logger.info(f"[{self.name}] stopped")
+            raise

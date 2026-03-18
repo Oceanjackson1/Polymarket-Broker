@@ -65,6 +65,6 @@ async def test_btc_snapshot_crud(test_db_session):
     await test_db_session.refresh(snap)
     assert snap.id is not None
     result = await test_db_session.scalar(
-        select(BtcSnapshot).where(BtcSnapshot.timeframe == "5m")
+        select(BtcSnapshot).where(BtcSnapshot.id == snap.id)
     )
     assert result.price_usd == Decimal("67420.50")

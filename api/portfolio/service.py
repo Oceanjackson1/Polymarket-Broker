@@ -13,7 +13,7 @@ class PortfolioService:
         stmt = select(Order).where(
             and_(
                 Order.user_id == user_id,
-                Order.status.in_(["OPEN", "PARTIALLY_FILLED"]),
+                Order.status.in_(["OPEN", "PARTIALLY_FILLED", "FILLED"]),
                 Order.size_filled > 0,
             )
         )
@@ -56,7 +56,7 @@ class PortfolioService:
     async def get_balance(self, user_id: str) -> dict:
         """USDC balance: real balance from CLOB (best-effort) + locked in open orders."""
         stmt = select(Order).where(
-            and_(Order.user_id == user_id, Order.status.in_(["OPEN", "PENDING"]))
+            and_(Order.user_id == user_id, Order.status.in_(["OPEN", "PENDING", "PARTIALLY_FILLED"]))
         )
         result = await self.db.execute(stmt)
         open_orders = list(result.scalars().all())
@@ -92,15 +92,23 @@ class PortfolioService:
             for o in orders
         )
 
-        buy_notional = sum(
-            float(o.size_filled) * float(o.price)
-            for o in orders if o.side == "BUY"
-        )
-        sell_notional = sum(
-            float(o.size_filled) * float(o.price)
-            for o in orders if o.side == "SELL"
-        )
-        realized = sell_notional - buy_notional
+        # Per-token P&L: realized only when sells > buys for a given token
+        from collections import defaultdict
+        per_token_buy: dict[str, float] = defaultdict(float)
+        per_token_sell: dict[str, float] = defaultdict(float)
+
+        for o in orders:
+            notional_filled = float(o.size_filled) * float(o.price)
+            if o.side == "BUY":
+                per_token_buy[o.token_id] += notional_filled
+            else:
+                per_token_sell[o.token_id] += notional_filled
+
+        realized = 0.0
+        for token_id in set(list(per_token_buy.keys()) + list(per_token_sell.keys())):
+            sell = per_token_sell.get(token_id, 0.0)
+            buy = per_token_buy.get(token_id, 0.0)
+            realized += max(0.0, sell - buy)  # Only count realized gains when sells exceed buys
 
         return {
             "realized": realized,

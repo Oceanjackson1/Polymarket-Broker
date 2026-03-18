@@ -1,5 +1,4 @@
 # api/data/btc/router.py
-import base64
 from datetime import datetime, UTC
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession

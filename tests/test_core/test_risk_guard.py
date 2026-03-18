@@ -22,3 +22,13 @@ def test_free_tier_position_cap():
 
 def test_pro_tier_no_position_cap():
     check_position_cap("pro", existing_notional=999999.0, new_notional=999999.0)  # no limit
+
+
+def test_enterprise_tier_order_size_no_limit():
+    # Enterprise has no order size limit — even enormous orders pass
+    validate_order_size("enterprise", size=10000000.0, price=0.99)
+
+
+def test_unknown_tier_defaults_to_free_limits():
+    with pytest.raises(ValueError, match="ORDER_SIZE_EXCEEDED"):
+        validate_order_size("unknown_tier", size=2000.0, price=0.65)

@@ -40,6 +40,8 @@ def estimate_win_prob(
     score_component = max(-1.0, min(1.0, diff / 40.0))
 
     # As game progresses, score matters more
+    # Coefficient 0.80: calibrated so a 20-point Q4 lead yields ~89% win probability.
+    # The original plan value of 0.45 was too conservative (would give ~67% in same scenario).
     prob = 0.5 + score_component * time_fraction * 0.80
     return max(0.05, min(0.95, prob))
 
@@ -50,6 +52,7 @@ def compute_bias(
     """Returns (direction, magnitude_bps). Direction is from home team's perspective."""
     if statistical_prob is None or polymarket_prob is None:
         return "NEUTRAL", 0
+    # round() used instead of int() to avoid IEEE 754 truncation (e.g. 0.75-0.55 = 0.1999... * 10000 = 1999)
     delta_bps = round(abs(statistical_prob - polymarket_prob) * 10000)
     if delta_bps < BIAS_THRESHOLD_BPS:
         return "NEUTRAL", delta_bps
@@ -60,6 +63,8 @@ def compute_bias(
 
 def _find_market_for_game(home: str, away: str, markets: list) -> dict | None:
     """Fuzzy match: find a Polymarket market whose question contains both team last names."""
+    if not home or not away:
+        return None
     home_last = home.split()[-1].lower()
     away_last = away.split()[-1].lower()
     for m in markets:

@@ -7,6 +7,7 @@ from db.redis_client import get_redis_pool
 from api.middleware.error_handler import register_error_handlers
 from api.middleware.rate_limit import RateLimitMiddleware
 from api.auth.router import router as auth_router
+from api.markets.router import router as markets_router
 
 settings = get_settings()
 
@@ -28,3 +29,4 @@ app = FastAPI(
 register_error_handlers(app)
 app.add_middleware(RateLimitMiddleware)
 app.include_router(auth_router, prefix=settings.api_v1_prefix)
+app.include_router(markets_router, prefix=settings.api_v1_prefix)

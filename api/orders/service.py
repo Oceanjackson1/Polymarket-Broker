@@ -86,7 +86,7 @@ class OrderService:
         # 4. Submit to Polymarket CLOB
         clob = ClobClient()
         try:
-            clob_resp = await clob.post_order(signed_struct, api_key=settings.polymarket_private_key or "")
+            clob_resp = await clob.post_order(signed_struct, api_key=settings.polymarket_api_key)
         except Exception as e:
             raise ValueError(f"CLOB_SUBMISSION_FAILED: {e}") from e
 

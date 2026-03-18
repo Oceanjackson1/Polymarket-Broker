@@ -10,6 +10,9 @@ from api.orders.schemas import (
     OrderRequest, OrderResponse, PaginatedOrders,
     BuildOrderRequest, BuildOrderResponse, SubmitOrderRequest,
 )
+from core.config import get_settings
+
+settings = get_settings()
 
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -131,7 +134,7 @@ async def cancel_order(
 ):
     order = await OrderService(db).cancel_order(
         user_id=auth["user_id"], order_id=order_id,
-        api_key="",  # CLOB API key is a stub for now
+        api_key=settings.polymarket_api_key,
     )
     return OrderResponse(**_order_to_response_dict(order))
 
@@ -142,6 +145,6 @@ async def cancel_all_orders(
     db: AsyncSession = Depends(get_session),
 ):
     count = await OrderService(db).cancel_all_open(
-        user_id=auth["user_id"], api_key=""
+        user_id=auth["user_id"], api_key=settings.polymarket_api_key
     )
     return {"cancelled": count}

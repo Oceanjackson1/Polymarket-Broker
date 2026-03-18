@@ -25,7 +25,7 @@ def _parse_prob(market: dict) -> Decimal | None:
     prices = market.get("outcomePrices", [])
     try:
         return Decimal(str(prices[0]))
-    except (IndexError, Exception):
+    except Exception:
         return None
 
 

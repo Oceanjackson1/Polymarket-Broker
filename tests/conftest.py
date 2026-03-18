@@ -22,6 +22,9 @@ async def setup_test_db():
     try:
         from api.auth.models import User, ApiKey, RefreshToken  # noqa: F401
         from api.orders.models import Order  # noqa: F401
+        from api.data.sports.models import SportsEvent  # noqa: F401
+        from api.data.nba.models import NbaGame  # noqa: F401
+        from api.data.btc.models import BtcSnapshot  # noqa: F401
     except ImportError:
         pass
 

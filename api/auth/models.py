@@ -29,6 +29,7 @@ class ApiKey(Base):
     key_prefix: Mapped[str] = mapped_column(String(20), nullable=False)
     key_encrypted: Mapped[str] = mapped_column(String(500), nullable=False)
     key_hint: Mapped[str] = mapped_column(String(10), nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     scopes: Mapped[list] = mapped_column(JSON, default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

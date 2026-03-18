@@ -1,3 +1,4 @@
+import hashlib
 import secrets
 from datetime import datetime, UTC, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,6 +63,7 @@ class AuthService:
             key_prefix="pm_live_sk",
             key_encrypted=encrypt_api_key(raw_key),
             key_hint=raw_key[-4:],
+            key_hash=hashlib.sha256(raw_key.encode()).hexdigest(),
             scopes=scopes,
         )
         self.db.add(key)
@@ -74,6 +76,13 @@ class AuthService:
             select(ApiKey).where(ApiKey.user_id == user_id, ApiKey.is_active == True)
         )
         return list(result.scalars().all())
+
+    async def resolve_api_key(self, raw_key: str):
+        """Look up an ApiKey row by hashing the submitted raw key. Returns None if not found."""
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        return await self.db.scalar(
+            select(ApiKey).where(ApiKey.key_hash == key_hash, ApiKey.is_active == True)
+        )
 
     async def delete_api_key(self, user_id: str, key_id: str) -> None:
         key = await self.db.scalar(

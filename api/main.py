@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
@@ -14,7 +15,10 @@ from api.portfolio.router import router as portfolio_router
 from api.data.sports.router import router as sports_data_router
 from api.data.nba.router import router as nba_data_router
 from api.data.btc.router import router as btc_data_router
+from api.data.crypto.router import router as crypto_data_router
+from api.data.dome.router import router as dome_data_router
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
@@ -23,6 +27,28 @@ async def lifespan(app: FastAPI):
     await init_db()
     app.state.redis = await get_redis_pool()
 
+    # ── Build Dome stack (optional — graceful if no keys configured) ──
+    dome_client = None
+    dome_ws = None
+    try:
+        from core.dome.factory import build_dome_key_pool, build_dome_client, build_dome_ws, get_tracked_wallets
+
+        pool = build_dome_key_pool()
+        if pool:
+            dome_client = build_dome_client(pool)
+            app.state.dome_client = dome_client
+            logger.info("dome client initialised (%d REST keys, %d WS keys)", pool.rest_key_count, pool.ws_key_count)
+
+            if settings.dome_ws_enabled:
+                dome_ws = build_dome_ws(pool)
+                await dome_ws.start()
+                app.state.dome_ws = dome_ws
+        else:
+            logger.info("dome api keys not configured — dome features disabled")
+    except Exception:
+        logger.warning("failed to initialise dome stack", exc_info=True)
+
+    # ── Start collectors ──
     tasks = []
     if not settings.disable_collectors:
         from data_pipeline.sports_collector import SportsCollector
@@ -30,18 +56,41 @@ async def lifespan(app: FastAPI):
         from data_pipeline.btc_collector import BtcCollector
         from db.postgres import AsyncSessionLocal
 
+        from data_pipeline.coinglass_collector import CoinGlassCollector
+
         tasks = [
             asyncio.create_task(SportsCollector().run(AsyncSessionLocal)),
             asyncio.create_task(NbaCollector().run(AsyncSessionLocal)),
-            asyncio.create_task(BtcCollector().run(AsyncSessionLocal)),
+            asyncio.create_task(BtcCollector(dome_client=dome_client).run(AsyncSessionLocal)),
+            asyncio.create_task(CoinGlassCollector().run(AsyncSessionLocal)),
         ]
+
+        # Dome-powered collectors (only if keys present).
+        if dome_client:
+            from data_pipeline.dome_market_collector import DomeMarketCollector
+            from data_pipeline.kalshi_collector import KalshiCollector
+            from data_pipeline.wallet_tracker import WalletTracker
+            from core.dome.factory import get_tracked_wallets
+
+            tasks.append(asyncio.create_task(DomeMarketCollector(dome_client).run(AsyncSessionLocal)))
+            tasks.append(asyncio.create_task(KalshiCollector(dome_client).run(AsyncSessionLocal)))
+
+            wallets = get_tracked_wallets()
+            if wallets:
+                tasks.append(asyncio.create_task(WalletTracker(dome_client, wallets).run(AsyncSessionLocal)))
 
     yield
 
+    # ── Shutdown ──
     for t in tasks:
         t.cancel()
     if tasks:
         await asyncio.gather(*tasks, return_exceptions=True)
+
+    if dome_ws:
+        await dome_ws.stop()
+    if dome_client:
+        await dome_client.close()
 
     await app.state.redis.aclose()
 
@@ -61,3 +110,5 @@ app.include_router(portfolio_router, prefix=settings.api_v1_prefix)
 app.include_router(sports_data_router, prefix=settings.api_v1_prefix)
 app.include_router(nba_data_router, prefix=settings.api_v1_prefix)
 app.include_router(btc_data_router, prefix=settings.api_v1_prefix)
+app.include_router(crypto_data_router, prefix=settings.api_v1_prefix)
+app.include_router(dome_data_router, prefix=settings.api_v1_prefix)

@@ -37,6 +37,18 @@ class Settings(BaseSettings):
     coingecko_api_base: str = "https://api.coingecko.com"
     disable_collectors: bool = False
 
+    # CoinGlass
+    coinglass_api_key: str = ""
+    coinglass_api_base: str = "https://open-api-v4.coinglass.com"
+
+    # Dome API
+    dome_api_keys: str = ""  # comma-separated list of API keys
+    dome_api_base: str = "https://api.domeapi.io/v1"
+    dome_ws_enabled: bool = True
+    dome_ws_key_count: int = 2  # keys reserved for WebSocket connections
+    dome_cooldown_seconds: float = 10.0
+    tracked_wallets: str = ""  # comma-separated wallet addresses for tracking
+
     # App
     environment: str = "development"
     api_v1_prefix: str = "/api/v1"

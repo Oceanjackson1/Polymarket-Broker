@@ -26,3 +26,12 @@ class BtcTimeframeResponse(BaseModel):
 class BtcHistoryResponse(BaseModel):
     data: list[BtcSnapshotResponse]
     pagination: dict
+
+
+class BtcFusionResponse(BaseModel):
+    timeframe: str
+    polymarket: dict
+    spot: dict
+    derivatives: dict
+    stale: bool
+    recorded_at: datetime

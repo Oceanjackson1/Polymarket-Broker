@@ -18,7 +18,7 @@ export default function MarketingLayout({
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
         <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center">
-            <span className="text-[17px] font-semibold tracking-tight text-white">Polydesk</span>
+            <span className="text-[22px] font-semibold tracking-tight text-white">Polydesk</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -38,13 +38,13 @@ export default function MarketingLayout({
               href="/login"
               className="text-[13px] text-white/40 transition-colors hover:text-white"
             >
-              Sign in
+              Sign In
             </Link>
             <Link
               href="/register"
               className="rounded-full bg-white px-5 py-2 text-[13px] font-medium text-black transition-all hover:bg-white/90"
             >
-              Get started
+              Get Started
             </Link>
           </div>
         </nav>

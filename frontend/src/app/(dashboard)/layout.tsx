@@ -35,7 +35,7 @@ export default function DashboardLayout({
         {/* Logo */}
         <div className="flex h-14 items-center border-b border-border-subtle px-4">
           <Link href="/dashboard" className="flex items-center">
-            <span className="text-[17px] font-semibold tracking-tight text-white">Polydesk</span>
+            <span className="text-[22px] font-semibold tracking-tight text-white">Polydesk</span>
           </Link>
         </div>
 

@@ -88,7 +88,7 @@ export default function LandingPage() {
             <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
               Data Polymarket
               <br />
-              <span className="text-white/30">cannot provide</span>
+              <span className="text-white/30">Cannot Provide</span>
             </h2>
           </div>
           <ExclusiveFeaturesGrid features={features} />
@@ -106,7 +106,7 @@ export default function LandingPage() {
               HOW IT WORKS
             </p>
             <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
-              Start in minutes
+              Start In Minutes
             </h2>
           </div>
           <div className="grid gap-6 md:grid-cols-4">
@@ -158,9 +158,9 @@ export default function LandingPage() {
                 DEVELOPER EXPERIENCE
               </p>
               <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
-                API first
+                API First
                 <br />
-                <span className="text-white/30">by design</span>
+                <span className="text-white/30">By Design</span>
               </h2>
               <p className="mt-6 text-[17px] leading-relaxed text-white/50">
                 Our own dashboard calls the same API you do.
@@ -226,7 +226,7 @@ export default function LandingPage() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="mx-auto max-w-2xl px-6 text-center">
           <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
-            Ready to start
+            Ready To Start
           </h2>
           <p className="mt-6 text-[17px] text-white/50">
             Free tier, no credit card, 500 API calls per day
@@ -236,13 +236,13 @@ export default function LandingPage() {
               href="/dashboard"
               className="rounded-full bg-white px-10 py-4 text-base font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
             >
-              Get started free
+              Get Started Free
             </Link>
             <Link
               href="/pricing"
               className="rounded-full border border-white/15 px-10 py-4 text-base font-medium text-white transition-all hover:border-white/30"
             >
-              View pricing
+              View Pricing
             </Link>
           </div>
         </div>

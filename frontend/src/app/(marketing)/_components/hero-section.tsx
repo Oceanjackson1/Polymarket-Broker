@@ -164,8 +164,8 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
           >
-            Prediction markets{" "}
-            <span className="text-white/20">reimagined</span>
+            Prediction Markets{" "}
+            <span className="text-white/20">Reimagined</span>
           </motion.h1>
         </div>
 
@@ -194,7 +194,7 @@ export function HeroSection() {
             href="/dashboard"
             className="rounded-full bg-white px-8 py-3.5 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
           >
-            Get started free
+            Get Started Free
           </Link>
           <Link
             href="/docs"
@@ -275,7 +275,7 @@ export function ExclusiveFeaturesGrid({ features }: { features: ExclusiveFeature
               {feature.description}
             </p>
             <p className="mt-6 text-sm text-white/25 transition-colors group-hover:text-white/50">
-              Learn more
+              Learn More
             </p>
           </Link>
         </motion.div>

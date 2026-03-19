@@ -18,7 +18,7 @@ export default function ContentLayout({
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
         <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center">
-            <span className="text-[17px] font-semibold tracking-tight text-white">Polydesk</span>
+            <span className="text-[22px] font-semibold tracking-tight text-white">Polydesk</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">

@@ -2,6 +2,7 @@ import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import type { ReactNode } from 'react';
 import { source } from '@/lib/source';
 import Link from 'next/link';
+import { LanguageToggle } from '@/components/docs/language-toggle';
 import './styles.css';
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -20,6 +21,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             </span>
           </Link>
         ),
+        children: <LanguageToggle />,
       }}
     >
       {children}

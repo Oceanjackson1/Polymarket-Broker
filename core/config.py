@@ -49,6 +49,16 @@ class Settings(BaseSettings):
     dome_cooldown_seconds: float = 10.0
     tracked_wallets: str = ""  # comma-separated wallet addresses for tracking
 
+    # Open-Meteo
+    open_meteo_ensemble_base: str = "https://ensemble-api.open-meteo.com"
+    open_meteo_geocoding_base: str = "https://geocoding-api.open-meteo.com"
+
+    # DeepSeek AI
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_model: str = "deepseek-chat"
+    analysis_daily_quota_free: int = 10
+
     # App
     environment: str = "development"
     api_v1_prefix: str = "/api/v1"

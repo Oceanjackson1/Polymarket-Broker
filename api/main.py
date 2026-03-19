@@ -19,6 +19,8 @@ from api.data.btc.router import router as btc_data_router
 from api.data.crypto.router import router as crypto_data_router
 from api.data.dome.router import router as dome_data_router
 from api.data.weather.router import router as weather_data_router
+from api.analysis.router import router as analysis_router
+from api.ws.router import router as ws_router
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -127,3 +129,5 @@ app.include_router(btc_data_router, prefix=settings.api_v1_prefix)
 app.include_router(crypto_data_router, prefix=settings.api_v1_prefix)
 app.include_router(dome_data_router, prefix=settings.api_v1_prefix)
 app.include_router(weather_data_router, prefix=settings.api_v1_prefix)
+app.include_router(analysis_router, prefix=settings.api_v1_prefix)
+app.include_router(ws_router)  # No prefix — WebSocket paths start with /ws/

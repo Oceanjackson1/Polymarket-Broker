@@ -3,12 +3,21 @@ import type { ReactNode } from 'react';
 import { source } from '@/lib/source';
 import Link from 'next/link';
 import { LanguageToggle } from '@/components/docs/language-toggle';
-import './styles.css';
+import '../styles.css';
 
-export default function Layout({ children }: { children: ReactNode }) {
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  const tree = source.pageTree[lang] ?? source.pageTree['en'];
+
   return (
     <DocsLayout
-      tree={source.pageTree}
+      tree={tree}
       nav={{
         title: (
           <Link href="/" className="flex items-center gap-2.5">

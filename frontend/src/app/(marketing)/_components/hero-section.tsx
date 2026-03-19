@@ -146,62 +146,63 @@ export function HeroSection() {
         <div className="absolute left-1/2 top-0 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-white/[0.02] blur-[120px]" />
       </div>
 
-      <div className="mx-auto max-w-6xl px-6 pb-4 pt-24 md:pt-32">
-        {/* ── Text ── */}
-        <div className="mx-auto max-w-3xl text-center">
+      <div className="mx-auto max-w-6xl px-6 pb-4 pt-24 md:pt-36">
+        {/* ── Title Group ── */}
+        <div className="mx-auto max-w-4xl text-center">
           <motion.p
-            className="mb-6 text-xs font-medium uppercase tracking-widest text-white/25"
+            className="mb-8 text-[11px] font-medium uppercase tracking-[0.25em] text-white/20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
           >
-            INSTITUTIONAL PREDICTION MARKET TERMINAL
+            Institutional Prediction Market Terminal
           </motion.p>
 
           <motion.h1
-            className="text-6xl font-semibold leading-[1.05] tracking-tighter text-white md:text-8xl lg:text-9xl"
+            className="text-[clamp(3rem,7vw,4.5rem)] font-semibold leading-[1.08] tracking-tight text-white"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
           >
-            Prediction
-            <br />
-            markets
-            <br />
-            <span className="text-white/25">reimagined</span>
+            Prediction markets{" "}
+            <span className="text-white/20">reimagined</span>
           </motion.h1>
-
-          <motion.p
-            className="mx-auto mt-10 max-w-lg text-[17px] leading-relaxed text-white/50"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.25 }}
-          >
-            Exclusive data Polymarket does not offer.{" "}
-            NBA live fusion, BTC multi-timeframe predictions,{" "}
-            AI pricing-bias analysis, one unified API
-          </motion.p>
-
-          <motion.div
-            className="mt-10 flex items-center justify-center gap-4"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            <Link
-              href="/dashboard"
-              className="rounded-full bg-white px-8 py-3.5 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
-            >
-              Get started free
-            </Link>
-            <Link
-              href="/docs"
-              className="rounded-full border border-white/15 px-8 py-3.5 text-[15px] font-medium text-white transition-all hover:border-white/30 hover:bg-white/[0.04]"
-            >
-              API Docs
-            </Link>
-          </motion.div>
         </div>
+
+        {/* ── Description Group (tighter coupling to title) ── */}
+        <motion.p
+          className="mx-auto mt-7 max-w-md text-center text-[17px] leading-[1.7] text-white/45"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.25 }}
+        >
+          Exclusive data Polymarket does not offer.
+          <br />
+          NBA live fusion, BTC multi-timeframe predictions,
+          <br />
+          AI pricing-bias analysis, one unified API
+        </motion.p>
+
+        {/* ── Action Group ── */}
+        <motion.div
+          className="mt-12 flex items-center justify-center gap-3"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          <Link
+            href="/dashboard"
+            className="rounded-full bg-white px-8 py-3.5 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
+          >
+            Get started free
+          </Link>
+          <Link
+            href="/docs"
+            className="rounded-full border border-white/[0.12] px-8 py-3.5 text-[15px] font-medium text-white/80 transition-all hover:border-white/25 hover:bg-white/[0.04]"
+          >
+            API Docs
+          </Link>
+        </motion.div>
 
         {/* ── Bento Grid ── */}
         <motion.div

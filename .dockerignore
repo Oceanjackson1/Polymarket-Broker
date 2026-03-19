@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.env
+.env.test
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/
+consumers/web/node_modules/
+consumers/web/.next/
+docs/
+tests/
+*.md

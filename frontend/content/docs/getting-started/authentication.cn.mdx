@@ -1,0 +1,54 @@
+---
+title: 认证方式
+description: Polydesk 支持 API Key 和以太坊钱包两种认证方式
+---
+
+# 认证方式
+
+Polydesk 提供两种认证路径：
+
+## 路径 A：API Key（托管模式）
+
+适用于服务端集成和自动化交易。
+
+```
+Header: X-API-Key: pm_live_sk_xxxxxxxxxxxx
+```
+
+服务端验证 Key → 解析用户、套餐、权限 → Broker 代为签名下单。
+
+### API Key 格式
+
+| 格式 | 用途 |
+|------|------|
+| `pm_live_sk_xxx` | 生产环境，完整交易权限 |
+| `pm_test_sk_xxx` | 测试网（Polygon Amoy） |
+| `pm_live_ro_xxx` | 只读，无交易权限 |
+
+### 权限作用域
+
+| 作用域 | 说明 |
+|--------|------|
+| `markets:read` | 查询市场、订单簿、成交 |
+| `orders:write` | 下单和撤单 |
+| `portfolio:read` | 查看持仓、余额 |
+| `data:read` | 增强数据（体育/NBA/BTC） |
+| `analysis:read` | AI 分析端点 |
+
+## 路径 B：钱包认证（非托管模式）
+
+适用于用户自行签名的 DApp 集成。
+
+1. `POST /auth/wallet/challenge` → 获取签名挑战
+2. 钱包签署 nonce（EIP-191）
+3. `POST /auth/wallet/verify` → 获取 JWT
+
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "rt_...",
+  "token_type": "bearer"
+}
+```
+
+Access Token 有效期 15 分钟，Refresh Token 有效期 30 天。

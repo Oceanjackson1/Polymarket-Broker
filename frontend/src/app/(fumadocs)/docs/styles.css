@@ -1,0 +1,19 @@
+/* Override fumadocs-ui theme to match Polydesk black/white design */
+:root, .dark {
+  --color-fd-background: hsl(0, 0%, 0%);
+  --color-fd-foreground: hsl(0, 0%, 100%);
+  --color-fd-muted: hsla(0, 0%, 100%, 0.06);
+  --color-fd-muted-foreground: hsla(0, 0%, 100%, 0.4);
+  --color-fd-popover: hsl(0, 0%, 4%);
+  --color-fd-popover-foreground: hsl(0, 0%, 100%);
+  --color-fd-card: hsl(0, 0%, 4%);
+  --color-fd-card-foreground: hsl(0, 0%, 100%);
+  --color-fd-border: hsla(0, 0%, 100%, 0.08);
+  --color-fd-primary: hsl(0, 0%, 100%);
+  --color-fd-primary-foreground: hsl(0, 0%, 0%);
+  --color-fd-secondary: hsla(0, 0%, 100%, 0.06);
+  --color-fd-secondary-foreground: hsl(0, 0%, 100%);
+  --color-fd-accent: hsla(0, 0%, 100%, 0.04);
+  --color-fd-accent-foreground: hsl(0, 0%, 100%);
+  --color-fd-ring: hsla(0, 0%, 100%, 0.2);
+}

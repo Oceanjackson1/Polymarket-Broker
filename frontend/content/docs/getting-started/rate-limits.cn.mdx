@@ -1,0 +1,39 @@
+---
+title: 频率限制
+description: Polydesk API 各套餐的调用限制说明
+---
+
+# 频率限制
+
+## 套餐对比
+
+| 套餐 | 日调用量 | 每分钟突发 | Broker 手续费 | AI 分析 | 策略 |
+|------|---------|-----------|-------------|---------|------|
+| **Free** | 500 | 20 | +10 bps | 10次/天 | 否 |
+| **Pro** ($99/月) | 无限 | 300 | +5 bps | 无限 | 是 |
+| **Enterprise** | 无限 | 自定义 | 自定义 | 无限 | 是 |
+
+## 响应头
+
+每个 API 响应都包含以下限流头：
+
+```
+X-RateLimit-Limit: 500
+X-RateLimit-Remaining: 347
+X-RateLimit-Reset: 1742169600
+```
+
+## 超限处理
+
+当超出限制时，API 返回 `HTTP 429 Too Many Requests`：
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Daily API call limit reached"
+  }
+}
+```
+
+建议使用指数退避重试策略。WebSocket 连接不计入日调用量。

@@ -1,0 +1,69 @@
+---
+title: 快速入门
+description: 5 分钟接入 Polydesk API
+---
+
+# 快速入门
+
+按照以下步骤在 5 分钟内开始使用 Polydesk API。
+
+## 第一步：注册账号
+
+```bash
+curl -X POST /api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com", "password": "your_password"}'
+```
+
+## 第二步：创建 API Key
+
+登录后，创建一个具有所需权限的 API Key：
+
+```bash
+curl -X POST /api/v1/auth/keys \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "My Key", "scopes": ["data:read", "markets:read"]}'
+```
+
+响应示例：
+
+```json
+{
+  "id": "key_abc123",
+  "name": "My Key",
+  "key": "pm_live_sk_xxxxxxxxxxxx",
+  "scopes": ["data:read", "markets:read"]
+}
+```
+
+## 第三步：获取市场数据
+
+```bash
+curl -H "X-API-Key: pm_live_sk_xxxxxxxxxxxx" \
+  /api/v1/data/nba/games
+```
+
+## 第四步：获取 NBA 融合数据
+
+```bash
+curl -H "X-API-Key: pm_live_sk_xxxxxxxxxxxx" \
+  /api/v1/data/nba/games/gsw-lal/fusion
+```
+
+响应示例：
+
+```json
+{
+  "game_id": "gsw-lal",
+  "score": { "home": 94, "away": 87, "quarter": 3 },
+  "polymarket": { "home_win_prob": 0.31 },
+  "bias_signal": { "direction": "HOME_UNDERPRICED", "magnitude_bps": 420 }
+}
+```
+
+## 下一步
+
+- [认证方式](/docs/cn/getting-started/authentication) — 了解 API Key 和钱包认证
+- [频率限制](/docs/cn/getting-started/rate-limits) — 了解各套餐的调用限制
+- [NBA 融合数据](/docs/cn/api-reference/data-nba) — 完整的 NBA 数据端点文档

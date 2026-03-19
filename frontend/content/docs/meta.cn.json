@@ -1,0 +1,24 @@
+{
+  "title": "文档",
+  "pages": [
+    "index",
+    "---快速开始---",
+    "getting-started/quickstart",
+    "getting-started/authentication",
+    "getting-started/rate-limits",
+    "---API 参考---",
+    "api-reference/auth",
+    "api-reference/markets",
+    "api-reference/orders",
+    "api-reference/portfolio",
+    "api-reference/data-sports",
+    "api-reference/data-nba",
+    "api-reference/data-btc",
+    "---指南---",
+    "guides/nba-fusion-trading",
+    "guides/btc-multiframe",
+    "guides/convergence-arbitrage",
+    "---",
+    "changelog"
+  ]
+}

@@ -5,11 +5,9 @@ import Link from 'next/link';
 import './styles.css';
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const tree = source.pageTree['en'] ?? Object.values(source.pageTree)[0];
-
   return (
     <DocsLayout
-      tree={tree}
+      tree={source.pageTree}
       nav={{
         title: (
           <Link href="/" className="flex items-center gap-2.5">

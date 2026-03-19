@@ -17,8 +17,12 @@ export default function ContentLayout({
       {/* Navigation */}
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
         <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center">
-            <span className="text-[22px] font-semibold tracking-tight text-white">Polydesk</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-white">
+              <rect x="2" y="2" width="16" height="16" rx="4" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M7 13V7h3.5a2.5 2.5 0 0 1 0 5H7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+            </svg>
+            <span className="text-[20px] font-semibold tracking-tight text-white">Polydesk</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">

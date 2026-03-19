@@ -5,7 +5,7 @@ import { HeroSection, ExclusiveFeaturesGrid } from "./_components/hero-section";
 export const metadata: Metadata = {
   title: "Polymarket Broker — Institutional Prediction Market Terminal",
   description:
-    "Trade prediction markets with institutional-grade tools. Real-time NBA fusion data, 145-sport orderbooks, BTC multi-timeframe predictions, and AI pricing-bias analysis. Free to start, Pro at $99/mo.",
+    "Trade prediction markets with institutional-grade tools. Real-time NBA fusion data, 145-sport orderbooks, BTC multi-timeframe predictions, and AI pricing-bias analysis.",
   openGraph: {
     title: "Polymarket Broker — Institutional Prediction Market Terminal",
     description:
@@ -19,247 +19,201 @@ const jsonLd = {
   name: "Polymarket Broker",
   applicationCategory: "FinanceApplication",
   operatingSystem: "Web",
-  description:
-    "Institutional-grade prediction market trading platform with exclusive data feeds and AI analysis.",
+  description: "Institutional-grade prediction market trading platform.",
   offers: [
-    {
-      "@type": "Offer",
-      name: "Free",
-      price: "0",
-      priceCurrency: "USD",
-      description: "500 API calls/day, 10 AI analyses/day",
-    },
-    {
-      "@type": "Offer",
-      name: "Pro",
-      price: "99",
-      priceCurrency: "USD",
-      billingIncrement: "P1M",
-      description:
-        "Unlimited API calls, unlimited AI analysis, strategies, webhooks",
-    },
+    { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Pro", price: "99", priceCurrency: "USD", billingIncrement: "P1M" },
   ],
 };
 
-const exclusiveFeatures = [
+const features = [
   {
-    title: "NBA 实时融合数据",
-    description:
-      "ESPN 比分 × Polymarket 赔率 × AI 偏差信号。发现市场定价错误，毫秒级更新。",
-    badge: "独家",
+    title: "NBA Live Fusion",
+    description: "Real-time ESPN scores fused with Polymarket odds. AI-powered bias signals detect mispricing as it happens.",
+    badge: "Exclusive",
     href: "/docs/guides/nba-fusion-trading",
     isAI: false,
   },
   {
-    title: "145 项体育历史订单簿",
-    description:
-      "覆盖 NBA、NFL、UFC、CS2 等 145 个运动/电竞品类的完整历史订单簿数据。",
-    badge: "独家",
+    title: "145-Sport Orderbooks",
+    description: "Full historical order book data across NBA, NFL, UFC, CS2 and 141 more sport and esport categories.",
+    badge: "Exclusive",
     href: "/docs/guides/sports-orderbooks",
     isAI: false,
   },
   {
-    title: "BTC 多时间框架预测",
-    description:
-      "5 分钟到 4 小时，四个时间框架的 BTC 预测市场概率 + 链上交易数据。",
-    badge: "独家",
+    title: "BTC Multi-Timeframe",
+    description: "Four prediction timeframes from 5 minutes to 4 hours. On-chain trade data with millisecond precision.",
+    badge: "Exclusive",
     href: "/docs/guides/btc-multiframe",
     isAI: false,
   },
   {
-    title: "AI 定价偏差分析",
-    description:
-      "DeepSeek 驱动的市场扫描，自动发现全市场 top 定价偏差机会。一键交易。",
+    title: "AI Pricing Analysis",
+    description: "DeepSeek-powered market scanner. Automatically surfaces the highest-magnitude pricing bias opportunities across all markets.",
     badge: "AI",
     href: "/docs/api-reference/analysis",
     isAI: true,
   },
 ];
 
-const stats = [
-  { value: "145+", label: "体育/电竞品类" },
-  { value: "30ms", label: "API 平均响应" },
-  { value: "4", label: "BTC 时间框架" },
-  { value: "24/7", label: "实时数据采集" },
-];
-
-const howItWorks = [
-  {
-    step: "01",
-    title: "注册获取 API Key",
-    description: "30 秒完成注册，立即获得 API Key。支持 API Key 和以太坊钱包两种认证方式。",
-  },
-  {
-    step: "02",
-    title: "获取独家数据",
-    description: "通过 REST API 或 WebSocket 获取 NBA 融合数据、BTC 预测、体育订单簿等独家数据。",
-  },
-  {
-    step: "03",
-    title: "AI 发现机会",
-    description: "AI 引擎自动扫描全市场定价偏差，推送交易信号。偏差超过阈值时实时提醒。",
-  },
-  {
-    step: "04",
-    title: "一键执行交易",
-    description: "托管模式一键下单，或非托管模式本地签名提交。收敛套利策略自动执行。",
-  },
+const steps = [
+  { n: "01", title: "Create API Key", desc: "Register in 30 seconds. Get your API key instantly. Two auth paths: API Key or Ethereum wallet." },
+  { n: "02", title: "Access Exclusive Data", desc: "REST API and WebSocket streams for NBA fusion, BTC predictions, and 145 sport orderbooks." },
+  { n: "03", title: "Discover Opportunities", desc: "AI engine scans every market for pricing bias. Get alerted when magnitude exceeds your threshold." },
+  { n: "04", title: "Execute Trades", desc: "One-click hosted orders or non-custodial local signing. Convergence arbitrage runs automatically." },
 ];
 
 export default function LandingPage() {
   return (
-    <>
+    <div className="bg-black">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* ═══ Hero + Bento Grid ═══ */}
+      {/* ═══ Hero + Bento ═══ */}
       <HeroSection />
 
-      {/* ═══ Stats Bar ═══ */}
-      <section className="border-y border-white/[0.06] bg-bg-card/50 backdrop-blur-sm">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-white/[0.06] px-6 md:grid-cols-4">
-          {stats.map((stat) => (
-            <div key={stat.label} className="py-8 text-center">
-              <p className="font-mono text-3xl font-bold text-accent-gold">{stat.value}</p>
-              <p className="mt-1 text-sm text-text-muted">{stat.label}</p>
-            </div>
-          ))}
+      {/* ═══ Divider ═══ */}
+      <div className="mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      {/* ═══ Features ═══ */}
+      <section className="bg-black py-32">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mx-auto mb-20 max-w-2xl text-center">
+            <p className="mb-4 text-sm font-medium tracking-widest text-white/30">
+              WHAT SETS US APART
+            </p>
+            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
+              Data that Polymarket
+              <br />
+              <span className="text-white/40">doesn&apos;t offer.</span>
+            </h2>
+          </div>
+          <ExclusiveFeaturesGrid features={features} />
         </div>
       </section>
 
-      {/* ═══ Exclusive Features ═══ */}
-      <section className="relative bg-bg-base">
-        {/* Subtle grid background */}
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <svg className="h-full w-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="grid-lines" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
-                <path d="M 64 0 L 0 0 0 64" fill="none" stroke="white" strokeWidth="0.5" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid-lines)" />
-          </svg>
-        </div>
+      {/* ═══ Divider ═══ */}
+      <div className="mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-        <div className="mx-auto max-w-7xl px-6 py-24">
-          <div className="mb-16 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-accent-gold">
-              Exclusive Data
+      {/* ═══ How it works ═══ */}
+      <section className="bg-black py-32">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mx-auto mb-20 max-w-2xl text-center">
+            <p className="mb-4 text-sm font-medium tracking-widest text-white/30">
+              HOW IT WORKS
             </p>
-            <h2 className="text-3xl font-bold text-text-primary md:text-4xl">
-              竞品无法提供的数据
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-text-secondary">
-              这些是 Polymarket 原生 API 不提供的独家增强数据层
-            </p>
-          </div>
-          <ExclusiveFeaturesGrid features={exclusiveFeatures} />
-        </div>
-      </section>
-
-      {/* ═══ How It Works ═══ */}
-      <section className="border-t border-white/[0.06] bg-bg-card/30">
-        <div className="mx-auto max-w-7xl px-6 py-24">
-          <div className="mb-16 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-accent-gold">
-              How It Works
-            </p>
-            <h2 className="text-3xl font-bold text-text-primary md:text-4xl">
-              四步开始交易
+            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
+              Start in minutes.
             </h2>
           </div>
-          <div className="grid gap-8 md:grid-cols-4">
-            {howItWorks.map((item, i) => (
+          <div className="grid gap-6 md:grid-cols-4">
+            {steps.map((s, i) => (
               <div
-                key={item.step}
-                className={`animate-fade-in stagger-${i + 1} relative rounded-xl border border-white/[0.06] bg-bg-card/60 p-6 backdrop-blur-sm`}
+                key={s.n}
+                className={`animate-fade-in stagger-${i + 1} rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8`}
               >
-                <span className="mb-4 block font-mono text-3xl font-bold text-accent-gold/30">
-                  {item.step}
+                <span className="mb-6 block font-mono text-4xl font-bold text-white/[0.07]">
+                  {s.n}
                 </span>
-                <h3 className="mb-2 text-base font-semibold text-text-primary">
-                  {item.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-text-secondary">
-                  {item.description}
-                </p>
-                {/* Connector line */}
-                {i < howItWorks.length - 1 && (
-                  <div className="absolute -right-4 top-1/2 hidden h-px w-8 bg-gradient-to-r from-accent-gold/30 to-transparent md:block" />
-                )}
+                <h3 className="mb-3 text-lg font-semibold text-white">{s.title}</h3>
+                <p className="text-sm leading-relaxed text-white/40">{s.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ API First (Code Preview) ═══ */}
-      <section className="border-t border-white/[0.06] bg-bg-base">
-        <div className="mx-auto max-w-7xl px-6 py-24">
-          <div className="grid items-center gap-16 md:grid-cols-2">
+      {/* ═══ Divider ═══ */}
+      <div className="mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      {/* ═══ Stats ═══ */}
+      <section className="bg-black py-24">
+        <div className="mx-auto grid max-w-4xl grid-cols-2 gap-8 px-6 md:grid-cols-4">
+          {[
+            { v: "145+", l: "Sports & Esports" },
+            { v: "<30ms", l: "API Latency" },
+            { v: "24/7", l: "Data Collection" },
+            { v: "4", l: "BTC Timeframes" },
+          ].map((s) => (
+            <div key={s.l} className="text-center">
+              <p className="font-mono text-4xl font-semibold text-white">{s.v}</p>
+              <p className="mt-2 text-sm text-white/30">{s.l}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══ Divider ═══ */}
+      <div className="mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      {/* ═══ API / Developer ═══ */}
+      <section className="bg-black py-32">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="grid items-center gap-20 md:grid-cols-2">
             <div>
-              <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-accent-gold">
-                Developer Experience
+              <p className="mb-4 text-sm font-medium tracking-widest text-white/30">
+                DEVELOPER EXPERIENCE
               </p>
-              <h2 className="text-3xl font-bold text-text-primary md:text-4xl">
-                API 优先设计
+              <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
+                API-first
+                <br />
+                <span className="text-white/40">by design.</span>
               </h2>
-              <p className="mt-4 text-text-secondary">
-                自有 Web 终端和第三方开发者调用完全相同的 API。我们自己吃自己的 API。
+              <p className="mt-6 text-lg leading-relaxed text-white/40">
+                Our own dashboard calls the same API you do.
+                Every endpoint, every feature — identical access.
               </p>
-              <ul className="mt-8 space-y-4">
+              <ul className="mt-10 space-y-5">
                 {[
-                  "RESTful API + WebSocket 实时流",
-                  "API Key + 以太坊钱包双认证路径",
-                  "托管模式和非托管模式订单",
-                  "完整的 OpenAPI 规范文档",
+                  "REST API + WebSocket real-time streams",
+                  "API Key + Ethereum wallet authentication",
+                  "Hosted and non-custodial order modes",
+                  "Full OpenAPI specification",
                 ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-text-secondary">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-gold/10 text-[10px] text-accent-gold">✓</span>
+                  <li key={item} className="flex items-center gap-4 text-[15px] text-white/50">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.06] text-xs text-white/60">✓</span>
                     {item}
                   </li>
                 ))}
               </ul>
-              <div className="mt-8 flex gap-4">
+              <div className="mt-10 flex gap-4">
                 <Link
                   href="/docs/getting-started/quickstart"
-                  className="btn-premium rounded-xl bg-accent-gold px-6 py-3 text-sm font-semibold text-bg-base"
+                  className="rounded-full bg-white px-7 py-3 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
                 >
-                  5 分钟快速接入
+                  Quick Start
                 </Link>
                 <Link
                   href="/docs"
-                  className="rounded-xl border border-white/10 px-6 py-3 text-sm font-semibold text-text-primary transition-colors hover:bg-white/[0.04]"
+                  className="rounded-full border border-white/15 px-7 py-3 text-[15px] font-medium text-white transition-all hover:border-white/30"
                 >
-                  API 文档
+                  Full Docs
                 </Link>
               </div>
             </div>
-            <div className="animate-fade-in overflow-hidden rounded-xl border border-white/[0.06] bg-bg-card/80 shadow-2xl shadow-black/40">
-              {/* Window chrome */}
-              <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+            <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a]">
+              <div className="flex items-center gap-2 border-b border-white/[0.06] px-5 py-3">
                 <div className="flex gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-loss/60" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-accent-gold/60" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-profit/60" />
+                  <div className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+                  <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
+                  <div className="h-3 w-3 rounded-full bg-[#28c840]" />
                 </div>
-                <span className="ml-2 text-[10px] text-text-muted">terminal — python3</span>
+                <span className="ml-3 text-xs text-white/30">quickstart.py</span>
               </div>
-              <pre className="overflow-x-auto p-6 text-sm leading-relaxed">
-                <code className="font-mono">
-                  <span className="text-info-blue">import</span> <span className="text-text-primary">requests</span>{"\n\n"}
-                  <span className="text-text-muted"># 一行代码获取 NBA 融合数据</span>{"\n"}
-                  <span className="text-text-primary">r</span> = <span className="text-text-primary">requests</span>.<span className="text-info-cyan">get</span>({"\n"}
-                  {"  "}<span className="text-accent-gold">&quot;/api/v1/data/nba/games/gsw-lal/fusion&quot;</span>,{"\n"}
-                  {"  "}headers={"{"}
-                  <span className="text-accent-gold">&quot;X-API-Key&quot;</span>: <span className="text-accent-gold">&quot;pm_live_sk_...&quot;</span>
-                  {"}"}{"\n"}
+              <pre className="p-6 text-[13px] leading-7">
+                <code>
+                  <span className="text-blue-400">import</span> <span className="text-white">requests</span>{"\n\n"}
+                  <span className="text-white/25"># One call. Score + odds + bias signal.</span>{"\n"}
+                  <span className="text-white">r</span> = requests.<span className="text-blue-400">get</span>({"\n"}
+                  {"  "}<span className="text-emerald-400">&quot;/api/v1/data/nba/games/gsw-lal/fusion&quot;</span>,{"\n"}
+                  {"  "}headers={"{"}<span className="text-emerald-400">&quot;X-API-Key&quot;</span>: key{"}"}{"\n"}
                   ){"\n\n"}
-                  <span className="text-text-muted"># 偏差信号 → 自动交易</span>{"\n"}
-                  <span className="text-info-blue">if</span> r.json()[<span className="text-accent-gold">&quot;bias_signal&quot;</span>][<span className="text-accent-gold">&quot;magnitude_bps&quot;</span>] &gt; <span className="text-profit">300</span>:{"\n"}
-                  {"  "}<span className="text-text-primary">place_order</span>(side=<span className="text-accent-gold">&quot;BUY&quot;</span>, size=<span className="text-profit">100</span>)
+                  <span className="text-white/25"># Bias detected → trade</span>{"\n"}
+                  <span className="text-blue-400">if</span> r.json()[<span className="text-emerald-400">&quot;magnitude_bps&quot;</span>] &gt; <span className="text-purple-400">300</span>:{"\n"}
+                  {"  "}place_order(<span className="text-emerald-400">&quot;BUY&quot;</span>, size=<span className="text-purple-400">100</span>)
                 </code>
               </pre>
             </div>
@@ -268,35 +222,31 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ CTA ═══ */}
-      <section className="relative overflow-hidden border-t border-white/[0.06] bg-bg-card/30">
-        {/* Background glow */}
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-accent-gold/[0.06] blur-[100px]" />
-        </div>
-
-        <div className="mx-auto max-w-7xl px-6 py-24 text-center">
-          <h2 className="text-3xl font-bold text-text-primary md:text-4xl">
-            开始使用 Polymarket Broker
+      <section className="relative bg-black py-32">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="mx-auto max-w-2xl px-6 text-center">
+          <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
+            Ready to start?
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-text-secondary">
-            Free 套餐永久免费 · Pro $99/月解锁全部独家数据和策略 · 30 秒完成注册
+          <p className="mt-6 text-lg text-white/40">
+            Free tier. No credit card. 500 API calls per day.
           </p>
           <div className="mt-10 flex items-center justify-center gap-4">
             <Link
               href="/dashboard"
-              className="btn-premium rounded-xl bg-accent-gold px-10 py-4 text-base font-semibold text-bg-base"
+              className="rounded-full bg-white px-10 py-4 text-base font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
             >
-              免费注册
+              Get started — free
             </Link>
             <Link
               href="/pricing"
-              className="rounded-xl border border-white/10 px-10 py-4 text-base font-semibold text-text-primary transition-colors hover:bg-white/[0.04]"
+              className="rounded-full border border-white/15 px-10 py-4 text-base font-medium text-white transition-all hover:border-white/30"
             >
-              查看定价方案
+              View pricing
             </Link>
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }

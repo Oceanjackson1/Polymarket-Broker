@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const navLinks = [
   { href: "/markets", label: "Markets" },
-  { href: "/docs", label: "API Docs" },
+  { href: "/docs", label: "Docs" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ];
@@ -14,14 +14,14 @@ export default function MarketingLayout({
 }) {
   return (
     <>
-      {/* Public Navigation — SEO-friendly, server-rendered */}
-      <header className="sticky top-0 z-50 border-b border-border-subtle bg-bg-base/95 backdrop-blur">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-accent-gold">PM</span>
-            <span className="text-lg font-semibold text-text-primary">
-              Broker
-            </span>
+      {/* Navigation */}
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
+        <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-[11px] font-bold text-black">
+              PM
+            </div>
+            <span className="text-[15px] font-semibold text-white">Broker</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -29,141 +29,113 @@ export default function MarketingLayout({
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+                className="text-[13px] text-white/40 transition-colors hover:text-white"
               >
                 {link.label}
               </Link>
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link
-              href="/dashboard"
-              className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+              href="/login"
+              className="text-[13px] text-white/40 transition-colors hover:text-white"
             >
-              Login
+              Sign in
             </Link>
             <Link
-              href="/dashboard"
-              className="rounded-lg bg-accent-gold px-4 py-2 text-sm font-medium text-bg-base transition-colors hover:bg-accent-gold-hover"
+              href="/register"
+              className="rounded-full bg-white px-5 py-2 text-[13px] font-medium text-black transition-all hover:bg-white/90"
             >
-              Get Started
+              Get started
             </Link>
           </div>
         </nav>
       </header>
 
-      {/* Page Content */}
       <main className="flex-1">{children}</main>
 
-      {/* Footer — SEO link matrix */}
-      <footer className="border-t border-border-subtle bg-bg-card">
-        <div className="mx-auto max-w-7xl px-6 py-16">
+      {/* Footer */}
+      <footer className="border-t border-white/[0.06] bg-black">
+        <div className="mx-auto max-w-6xl px-6 py-16">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             <div>
-              <h3 className="mb-4 text-sm font-semibold text-text-primary">
+              <h3 className="mb-5 text-xs font-medium uppercase tracking-widest text-white/30">
                 Product
               </h3>
               <ul className="space-y-3">
-                <li>
-                  <Link href="/markets" className="text-sm text-text-secondary hover:text-text-primary">
-                    Markets
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/pricing" className="text-sm text-text-secondary hover:text-text-primary">
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/dashboard" className="text-sm text-text-secondary hover:text-text-primary">
-                    Dashboard
-                  </Link>
-                </li>
+                {["Markets", "Dashboard", "Pricing"].map((t) => (
+                  <li key={t}>
+                    <Link href={`/${t.toLowerCase()}`} className="text-sm text-white/40 transition-colors hover:text-white">
+                      {t}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
-
             <div>
-              <h3 className="mb-4 text-sm font-semibold text-text-primary">
+              <h3 className="mb-5 text-xs font-medium uppercase tracking-widest text-white/30">
                 Exclusive Data
               </h3>
               <ul className="space-y-3">
-                <li>
-                  <Link href="/docs/guides/nba-fusion-trading" className="text-sm text-text-secondary hover:text-text-primary">
-                    NBA Fusion Data
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/docs/guides/btc-multiframe" className="text-sm text-text-secondary hover:text-text-primary">
-                    BTC Predictions
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/docs/guides/sports-orderbooks" className="text-sm text-text-secondary hover:text-text-primary">
-                    Sports Orderbooks
-                  </Link>
-                </li>
+                {[
+                  { label: "NBA Fusion", href: "/docs/guides/nba-fusion-trading" },
+                  { label: "BTC Predictions", href: "/docs/guides/btc-multiframe" },
+                  { label: "Sports Orderbooks", href: "/docs/guides/sports-orderbooks" },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="text-sm text-white/40 transition-colors hover:text-white">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
-
             <div>
-              <h3 className="mb-4 text-sm font-semibold text-text-primary">
+              <h3 className="mb-5 text-xs font-medium uppercase tracking-widest text-white/30">
                 Developers
               </h3>
               <ul className="space-y-3">
-                <li>
-                  <Link href="/docs" className="text-sm text-text-secondary hover:text-text-primary">
-                    API Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/docs/getting-started/quickstart" className="text-sm text-text-secondary hover:text-text-primary">
-                    Quick Start
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/docs/changelog" className="text-sm text-text-secondary hover:text-text-primary">
-                    Changelog
-                  </Link>
-                </li>
+                {[
+                  { label: "Documentation", href: "/docs" },
+                  { label: "Quick Start", href: "/docs/getting-started/quickstart" },
+                  { label: "Changelog", href: "/docs/changelog" },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="text-sm text-white/40 transition-colors hover:text-white">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
-
             <div>
-              <h3 className="mb-4 text-sm font-semibold text-text-primary">
+              <h3 className="mb-5 text-xs font-medium uppercase tracking-widest text-white/30">
                 Resources
               </h3>
               <ul className="space-y-3">
-                <li>
-                  <Link href="/blog" className="text-sm text-text-secondary hover:text-text-primary">
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/about" className="text-sm text-text-secondary hover:text-text-primary">
-                    About
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/glossary" className="text-sm text-text-secondary hover:text-text-primary">
-                    Glossary
-                  </Link>
-                </li>
+                {[
+                  { label: "Blog", href: "/blog" },
+                  { label: "About", href: "/about" },
+                  { label: "Glossary", href: "/glossary" },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="text-sm text-white/40 transition-colors hover:text-white">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
 
-          <div className="mt-12 flex items-center justify-between border-t border-border-subtle pt-8">
-            <p className="text-sm text-text-muted">
-              &copy; {new Date().getFullYear()} Polymarket Broker. All rights reserved.
+          <div className="mt-16 flex items-center justify-between border-t border-white/[0.06] pt-8">
+            <p className="text-xs text-white/20">
+              &copy; {new Date().getFullYear()} Polymarket Broker
             </p>
             <div className="flex items-center gap-6">
-              <Link href="/feed.xml" className="text-sm text-text-muted hover:text-text-secondary">
-                RSS
-              </Link>
-              <Link href="/llms.txt" className="text-sm text-text-muted hover:text-text-secondary">
-                llms.txt
-              </Link>
+              <Link href="/feed.xml" className="text-xs text-white/20 hover:text-white/40">RSS</Link>
+              <Link href="/llms.txt" className="text-xs text-white/20 hover:text-white/40">llms.txt</Link>
             </div>
           </div>
         </div>

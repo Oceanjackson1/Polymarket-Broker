@@ -6,18 +6,22 @@ export function LanguageToggle() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Detect if current page is Chinese (.cn suffix in path)
-  const isChinese = pathname.endsWith(".cn") || pathname.includes(".cn/");
+  const isChinese = pathname.endsWith(".cn");
 
   const toggle = () => {
     if (isChinese) {
-      // Switch to English: remove .cn
-      router.push(pathname.replace(/\.cn(\/|$)/, "$1"));
+      // /docs/api-reference/orders.cn → /docs/api-reference/orders
+      // /docs/index.cn → /docs
+      const enPath = pathname.replace(/\.cn$/, "");
+      router.push(enPath.endsWith("/index") ? enPath.replace(/\/index$/, "") : enPath);
     } else {
-      // Switch to Chinese: add .cn before trailing slash or at end
-      // /docs/getting-started/quickstart → /docs/getting-started/quickstart.cn
-      const cnPath = pathname.replace(/\/?$/, "") + ".cn";
-      router.push(cnPath);
+      // /docs → /docs/index.cn
+      // /docs/api-reference/orders → /docs/api-reference/orders.cn
+      if (pathname === "/docs" || pathname === "/docs/") {
+        router.push("/docs/index.cn");
+      } else {
+        router.push(pathname.replace(/\/$/, "") + ".cn");
+      }
     }
   };
 

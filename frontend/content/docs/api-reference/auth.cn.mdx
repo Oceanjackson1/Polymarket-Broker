@@ -1,0 +1,224 @@
+---
+title: 认证 API
+description: 用户注册、登录、API Key 管理及钱包认证端点
+---
+
+# 认证 API
+
+基础路径：`/api/v1/auth`
+
+认证 API 负责处理用户注册、会话管理、API Key 生命周期以及基于钱包的非托管认证。
+
+## 端点列表
+
+| 方法 | 路径 | 描述 | 所需权限作用域 |
+|---|---|---|---|
+| `POST` | `/auth/register` | 使用邮箱 + 密码注册 | — |
+| `POST` | `/auth/login` | 邮箱 + 密码 → JWT | — |
+| `POST` | `/auth/wallet/challenge` | 获取钱包签名所需的随机数 | — |
+| `POST` | `/auth/wallet/verify` | 验证钱包签名 → JWT | — |
+| `POST` | `/auth/wallet/refresh` | 刷新访问令牌 | — |
+| `GET` | `/auth/keys` | 列出所有 API Key | 需要 JWT |
+| `POST` | `/auth/keys` | 创建新 API Key | 需要 JWT |
+| `DELETE` | `/auth/keys/\{key_id\}` | 吊销 API Key | 需要 JWT |
+
+---
+
+## POST /auth/register
+
+注册新账户。
+
+**请求体：**
+
+```json
+{
+  "email": "you@example.com",
+  "password": "min-8-chars-password"
+}
+```
+
+**响应 `201`：**
+
+```json
+{
+  "user_id": "usr_abc123",
+  "email": "you@example.com",
+  "tier": "free",
+  "created_at": "2026-03-19T10:00:00Z"
+}
+```
+
+**错误码：**
+
+| 错误码 | HTTP 状态 | 描述 |
+|---|---|---|
+| `EMAIL_ALREADY_EXISTS` | 409 | 该邮箱已被注册 |
+| `INVALID_PASSWORD` | 400 | 密码不符合要求 |
+
+---
+
+## POST /auth/login
+
+使用邮箱和密码进行认证。
+
+**请求体：**
+
+```json
+{
+  "email": "you@example.com",
+  "password": "your-password"
+}
+```
+
+**响应 `200`：**
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "rt_opaque_30day_token",
+  "expires_in": 900,
+  "user_id": "usr_abc123",
+  "tier": "free"
+}
+```
+
+---
+
+## POST /auth/wallet/challenge
+
+获取一次性随机数，用于以太坊钱包签名。
+
+**请求体：** `{}` （空）
+
+**响应 `200`：**
+
+```json
+{
+  "nonce": "0x7f3a4e2d...",
+  "expires_at": "2026-03-19T10:15:00Z"
+}
+```
+
+该随机数在 15 分钟后失效。
+
+---
+
+## POST /auth/wallet/verify
+
+提交已签名的随机数以获取 JWT 令牌。
+
+**请求体：**
+
+```json
+{
+  "address": "0xYourEthereumAddress",
+  "signature": "0xSignedNonce..."
+}
+```
+
+**响应 `200`：**
+
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "rt_opaque_30day_token",
+  "expires_in": 900
+}
+```
+
+`access_token` 是一个有效期为 15 分钟的 JWT。后续请求中请使用 `Authorization: Bearer <token>` 进行认证。
+
+---
+
+## POST /auth/wallet/refresh
+
+使用刷新令牌换取新的访问令牌。
+
+**请求体：**
+
+```json
+{
+  "refresh_token": "rt_opaque_30day_token"
+}
+```
+
+**响应 `200`：**
+
+```json
+{
+  "access_token": "eyJ...",
+  "expires_in": 900
+}
+```
+
+---
+
+## GET /auth/keys
+
+列出已认证账户的所有 API Key。
+
+**请求头：** `Authorization: Bearer <access_token>`
+
+**响应 `200`：**
+
+```json
+{
+  "keys": [
+    {
+      "key_id": "key_xyz789",
+      "name": "Production bot",
+      "prefix": "pm_live_sk_xxxx",
+      "scopes": ["markets:read", "orders:write", "portfolio:read"],
+      "created_at": "2026-03-19T10:00:00Z",
+      "last_used_at": "2026-03-19T14:30:00Z"
+    }
+  ]
+}
+```
+
+注意：列表响应中不会返回完整的 API Key 值（仅返回用于识别的前缀）。
+
+---
+
+## POST /auth/keys
+
+创建新的 API Key。
+
+**请求头：** `Authorization: Bearer <access_token>`
+
+**请求体：**
+
+```json
+{
+  "name": "My trading bot",
+  "scopes": ["markets:read", "orders:write", "portfolio:read", "data:read"]
+}
+```
+
+**响应 `201`：**
+
+```json
+{
+  "key_id": "key_xyz789",
+  "name": "My trading bot",
+  "api_key": "pm_live_sk_xxxxxxxxxxxxxxxx",
+  "scopes": ["markets:read", "orders:write", "portfolio:read", "data:read"],
+  "created_at": "2026-03-19T10:00:00Z"
+}
+```
+
+<Callout type="warn">
+  完整的 `api_key` 值仅在创建时返回一次，请妥善保存。
+</Callout>
+
+---
+
+## DELETE /auth/keys/\{key_id\}
+
+立即吊销一个 API Key。
+
+**请求头：** `Authorization: Bearer <access_token>`
+
+**响应 `204`：** 无内容。
+
+吊销立即生效。所有正在使用该 Key 的进行中请求将以 `401` 失败。

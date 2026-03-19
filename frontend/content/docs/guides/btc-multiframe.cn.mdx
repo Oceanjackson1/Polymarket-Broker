@@ -1,0 +1,162 @@
+---
+title: BTC 多时间框架交易
+description: 利用 BTC 预测市场在 5m、15m、1h 和 4h 时间框架上的数据寻找交易优势
+---
+
+# BTC 多时间框架交易
+
+Polymarket 上的 BTC 预测市场允许你在固定窗口内交易价格方向性变动：5 分钟、15 分钟、1 小时和 4 小时。本指南介绍如何使用 BTC 数据 API 分析跨时间框架（timeframe）信号与链上（on-chain）数据，以寻找交易优势。
+
+## 了解 BTC 预测市场
+
+每个市场在窗口结束时若 BTC 现货价格高于开始时的价格则结算为 YES。结算使用市场开启时确立的参考价格。
+
+主要特点：
+- **持续轮换：** 旧市场结算后新市场随即开启。通常在任意时刻有 4 个活跃市场（每个时间框架各一个）。
+- **链上结算：** 所有成交和结算均在 Polygon 上进行。`/data/btc/onchain` 接口提供毫秒级精度的成交数据。
+- **隐含漂移：** 各时间框架下的 YES 价格代表市场对 BTC 在该时限内上涨的隐含概率。比较这些概率可以得出 BTC 方向性情绪的隐含"期限结构"。
+
+## 策略一：期限结构背离
+
+当 5m 和 15m 的 YES 价格与 1h 和 4h 价格出现显著背离时，可能预示着短期波动性或动量未能反映在长期预期中。
+
+```python
+import httpx
+
+API_KEY = "pm_live_sk_xxxxxxxxxxxxxxxx"
+BASE_URL = "https://api.broker.polymarket.com/api/v1"
+headers = {"X-API-Key": API_KEY}
+
+predictions = httpx.get(f"{BASE_URL}/data/btc/predictions", headers=headers).json()
+
+# Extract YES prices by timeframe
+yes_prices = {}
+for market in predictions["markets"]:
+    yes_prices[market["timeframe"]] = market["current_price_yes"]
+
+print("BTC YES prices by timeframe:")
+for tf, price in sorted(yes_prices.items()):
+    print(f"  {tf:>4}: {price:.3f}")
+
+# Term structure: compare 5m vs 4h
+short = yes_prices.get("5m", 0.5)
+long = yes_prices.get("4h", 0.5)
+spread_bps = abs(short - long) * 10000
+
+if spread_bps > 1000:
+    if short > long:
+        print(f"Short-term bullish vs long-term bearish: {spread_bps:.0f} bps divergence")
+        print("Consider: BUY 5m YES (momentum) or SELL 4h YES (mean reversion)")
+    else:
+        print(f"Short-term bearish vs long-term bullish: {spread_bps:.0f} bps divergence")
+        print("Consider: BUY 5m NO (momentum) or SELL 4h NO (mean reversion)")
+```
+
+## 策略二：链上订单流分析
+
+`/data/btc/onchain` 接口以毫秒精度提供每笔链上成交记录。机构投资者在 YES 方向的大额买入往往对后续价格走势具有预测意义。
+
+```python
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+
+# Get the last 5 minutes of on-chain data
+five_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+
+onchain = httpx.get(
+    f"{BASE_URL}/data/btc/onchain",
+    params={"from": five_min_ago, "limit": 500},
+    headers=headers
+).json()
+
+# Aggregate buy/sell volume by timeframe and outcome
+flow = defaultdict(lambda: {"yes_buy": 0, "yes_sell": 0, "no_buy": 0, "no_sell": 0})
+
+for trade in onchain["data"]:
+    tf = trade["timeframe"]
+    outcome = trade["outcome"]
+    side = trade["side"]
+    size = trade["size"]
+
+    key = f"{outcome.lower()}_{side.lower()}"
+    flow[tf][key] += size
+
+print("Order flow (5-min window):")
+for tf in ["5m", "15m", "1h", "4h"]:
+    if tf not in flow:
+        continue
+    f = flow[tf]
+    yes_net = f["yes_buy"] - f["yes_sell"]
+    no_net = f["no_buy"] - f["no_sell"]
+    print(f"  {tf}: YES net=${yes_net:+,.0f}, NO net=${no_net:+,.0f}")
+```
+
+当 YES 净订单流强劲为正（YES 方向大额买入）且 YES 价格低于 0.55 时，表明市场正在提前布局上涨行情。
+
+## 策略三：结算历史分析
+
+使用 `/data/btc/history` 接口计算各时间框架的实证 YES 结算率。若市场持续对基础概率定价有误，则存在持续性交易优势。
+
+```python
+from collections import Counter
+
+history = httpx.get(
+    f"{BASE_URL}/data/btc/history",
+    params={"timeframe": "5m", "limit": 500},
+    headers=headers
+).json()
+
+outcomes = Counter(item["outcome"] for item in history["data"])
+yes_rate = outcomes["YES"] / (outcomes["YES"] + outcomes["NO"])
+
+print(f"Empirical YES rate (last {len(history['data'])} 5m markets): {yes_rate:.3f}")
+
+# Get current 5m YES price
+pred_5m = httpx.get(f"{BASE_URL}/data/btc/predictions/5m", headers=headers).json()
+current_yes_price = pred_5m["market"]["yes"]["price"]
+
+drift_bps = (yes_rate - current_yes_price) * 10000
+print(f"Current YES price: {current_yes_price:.3f}")
+print(f"Implied edge: {drift_bps:+.0f} bps")
+
+if drift_bps > 300:
+    print("Historical YES rate above current market → consider BUY YES")
+elif drift_bps < -300:
+    print("Historical NO rate above current market → consider BUY NO")
+```
+
+## 读取链上数据
+
+`timestamp_ms` 字段提供毫秒级精度：
+
+```python
+# Detect large trades (>$5,000) in the last minute
+one_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+recent = httpx.get(
+    f"{BASE_URL}/data/btc/onchain",
+    params={"from": one_min_ago, "min_size": 5000, "limit": 100},
+    headers=headers
+).json()
+
+for trade in recent["data"]:
+    ts_ms = trade["timestamp_ms"]
+    age_ms = int(datetime.now(timezone.utc).timestamp() * 1000) - ts_ms
+    print(
+        f"  {trade['timeframe']:>4} | {trade['outcome']} {trade['side']:>4} | "
+        f"${trade['size']:>8,.0f} @ {trade['price']:.3f} | {age_ms}ms ago"
+    )
+```
+
+## 执行建议
+
+**仅使用限价单。** 在高波动期间，BTC 预测市场的买卖价差可能较宽。请始终使用 `type: LIMIT` 来控制入场价格，市价单会直接穿越价差。
+
+**根据成交量调整仓位大小。** 5m 市场的成交量最低（示例数据约为每日 12 万美元）。单笔仓位不应超过 24 小时成交量的 1%，以避免对市场造成显著冲击。
+
+**监控过期数据。** BTC 数据采集器每 30 秒更新一次。交易前请检查 `"stale": true`。
+
+```python
+data = httpx.get(f"{BASE_URL}/data/btc/predictions/5m", headers=headers).json()
+if data.get("stale"):
+    print("Stale — skip this cycle")
+```

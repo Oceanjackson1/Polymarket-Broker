@@ -1,0 +1,144 @@
+---
+title: 持仓 API
+description: 查看持仓、USDC 余额及盈亏情况
+---
+
+# 持仓 API
+
+基础路径：`/api/v1/portfolio`
+
+所需权限作用域：`portfolio:read`
+
+持仓 API 提供对当前持仓、USDC 余额及盈亏明细的只读访问。
+
+## 端点列表
+
+| 方法 | 路径 | 描述 |
+|---|---|---|
+| `GET` | `/portfolio/positions` | 当前未平仓持仓 |
+| `GET` | `/portfolio/balance` | USDC 余额 |
+| `GET` | `/portfolio/pnl` | 盈亏情况 |
+
+---
+
+## GET /portfolio/positions
+
+列出所有市场中当前的未平仓持仓。
+
+**查询参数：**
+
+| 参数 | 类型 | 默认值 | 描述 |
+|---|---|---|---|
+| `market_id` | string | — | 按特定市场筛选 |
+| `limit` | integer | 20 | 每页条数（最大 100） |
+| `cursor` | string | — | 分页游标 |
+
+**响应 `200`：**
+
+```json
+{
+  "data": [
+    {
+      "position_id": "pos_abc123",
+      "market_id": "0xabc123...",
+      "market_title": "Will the LA Lakers win the 2026 NBA Championship?",
+      "token_id": "217426331",
+      "outcome_label": "Yes",
+      "size": 200.0,
+      "avg_entry_price": 0.11,
+      "current_price": 0.14,
+      "unrealized_pnl": 6.0,
+      "unrealized_pnl_pct": 27.27,
+      "cost_basis": 22.0,
+      "market_value": 28.0,
+      "opened_at": "2026-03-15T10:00:00Z"
+    }
+  ],
+  "pagination": {
+    "cursor": "...",
+    "has_more": false,
+    "limit": 20
+  },
+  "summary": {
+    "total_positions": 5,
+    "total_cost_basis": 450.50,
+    "total_market_value": 523.75,
+    "total_unrealized_pnl": 73.25
+  }
+}
+```
+
+**持仓字段说明：**
+
+| 字段 | 描述 |
+|---|---|
+| `size` | 持有的份额数量（结果代币数） |
+| `avg_entry_price` | 每份平均买入价格 |
+| `current_price` | CLOB 当前中间价 |
+| `unrealized_pnl` | `(当前价格 - 平均买入价格) × 数量` |
+| `cost_basis` | `平均买入价格 × 数量` |
+| `market_value` | `当前价格 × 数量` |
+
+---
+
+## GET /portfolio/balance
+
+获取当前 USDC 余额。
+
+**响应 `200`：**
+
+```json
+{
+  "balance": 1500.00,
+  "locked": 250.50,
+  "available": 1249.50,
+  "currency": "USDC",
+  "updated_at": "2026-03-19T14:22:05Z"
+}
+```
+
+| 字段 | 描述 |
+|---|---|
+| `balance` | Polygon 链上 USDC 总余额 |
+| `locked` | 已被未成交订单占用的 USDC |
+| `available` | `balance - locked`，可用于新订单的余额 |
+
+---
+
+## GET /portfolio/pnl
+
+获取盈亏明细。
+
+**查询参数：**
+
+| 参数 | 类型 | 默认值 | 描述 |
+|---|---|---|---|
+| `from` | ISO 8601 | 账户开始时间 | 盈亏计算的起始日期 |
+| `to` | ISO 8601 | 当前时间 | 结束日期 |
+
+**响应 `200`：**
+
+```json
+{
+  "realized_pnl": 347.25,
+  "unrealized_pnl": 73.25,
+  "total_pnl": 420.50,
+  "fees_paid_broker": 12.50,
+  "fees_paid_polymarket": 0.0,
+  "volume_traded": 15432.75,
+  "trades_count": 87,
+  "win_rate": 0.632,
+  "period": {
+    "from": "2026-01-01T00:00:00Z",
+    "to": "2026-03-19T14:22:05Z"
+  }
+}
+```
+
+| 字段 | 描述 |
+|---|---|
+| `realized_pnl` | 已平仓的盈亏 |
+| `unrealized_pnl` | 按当前价格计算的未平仓盈亏 |
+| `fees_paid_broker` | Broker 手续费（成交时按 `feeRateBps` 计算） |
+| `fees_paid_polymarket` | Polymarket 协议手续费 |
+| `win_rate` | 盈利平仓占所有平仓的比例 |

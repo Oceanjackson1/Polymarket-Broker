@@ -1,0 +1,199 @@
+---
+title: 策略 API
+description: 执行预构建的交易策略，包括收敛套利
+---
+
+# 策略 API
+
+基础路径：`/api/v1/strategies`
+
+所需权限作用域：`strategies:execute`
+
+策略 API 提供预构建的可执行交易策略。v1 版本仅包含收敛套利策略。策略逻辑来源于 Polymarket-Trading-Agents 代码库。
+
+**套餐要求：** 需要 Pro 或 Enterprise 套餐，免费套餐不可用。
+
+## 可用策略
+
+| Slug | 描述 |
+|---|---|
+| `convergence` | 近确定结果市场（概率 ≥95%，距到期 ≤3 天） |
+
+## 端点列表
+
+| 方法 | 路径 | 描述 |
+|---|---|---|
+| `GET` | `/strategies` | 列出所有可用策略 |
+| `GET` | `/strategies/convergence/opportunities` | 满足收敛条件的市场 |
+| `POST` | `/strategies/convergence/execute` | 执行一笔收敛交易 |
+| `GET` | `/strategies/convergence/positions` | 活跃的收敛持仓 |
+
+---
+
+## GET /strategies
+
+列出所有可用策略的 slug 及元数据。
+
+**响应 `200`：**
+
+```json
+{
+  "strategies": [
+    {
+      "slug": "convergence",
+      "name": "Convergence Arbitrage",
+      "description": "Trade near-certain outcome markets where implied probability is ≥95% and expiry is ≤3 days. These markets are approaching resolution at known prices but may still offer yield.",
+      "tier_required": "pro",
+      "risk_level": "low",
+      "typical_return_bps": "50-200"
+    }
+  ]
+}
+```
+
+---
+
+## GET /strategies/convergence/opportunities
+
+查找当前满足收敛条件的市场：隐含概率 ≥ 95% 且距市场关闭 ≤ 3 天。
+
+**查询参数：**
+
+| 参数 | 类型 | 默认值 | 描述 |
+|---|---|---|---|
+| `min_prob` | float | `0.95` | 最低隐含概率（0.01 至 0.99） |
+| `max_days` | integer | `3` | 最大到期天数 |
+| `min_volume` | float | `1000` | 最低 24 小时交易量（USDC） |
+| `category` | string | — | 按市场类别筛选 |
+
+**响应 `200`：**
+
+```json
+{
+  "opportunities": [
+    {
+      "market_id": "0xabc123...",
+      "market_title": "Will Candidate X win the 2026 State Election?",
+      "category": "politics",
+      "token_id": "217426331",
+      "outcome_label": "Yes",
+      "current_price": 0.96,
+      "implied_probability": 0.96,
+      "close_time": "2026-03-21T23:59:59Z",
+      "days_to_expiry": 2.4,
+      "volume_24h": 87654.32,
+      "liquidity": 45000.0,
+      "expected_yield_bps": 400,
+      "max_position_usdc": 10000.0,
+      "expected_return_usdc": 166.67,
+      "risk_notes": "Resolution requires official certification. Small chance of delayed resolution."
+    },
+    {
+      "market_id": "0xdef456...",
+      "market_title": "Will Bitcoin close above $50,000 on March 20?",
+      "category": "crypto",
+      "token_id": "btc50k_yes",
+      "outcome_label": "Yes",
+      "current_price": 0.97,
+      "implied_probability": 0.97,
+      "close_time": "2026-03-20T23:59:59Z",
+      "days_to_expiry": 1.4,
+      "volume_24h": 234567.89,
+      "liquidity": 120000.0,
+      "expected_yield_bps": 309,
+      "max_position_usdc": 25000.0,
+      "expected_return_usdc": 773.20,
+      "risk_notes": "BTC is currently $68,400. Would require a ~27% drop to invalidate."
+    }
+  ],
+  "scan_metadata": {
+    "markets_scanned": 847,
+    "opportunities_found": 12,
+    "generated_at": "2026-03-19T14:22:05Z"
+  }
+}
+```
+
+**预期收益率计算：** `(1 - 当前价格) / 当前价格 × 10000` 个基点。以 0.96 价格买入的 Yes 结果，若以 1.0 结算，可获得约 `(1 - 0.96) / 0.96 × 10000 ≈ 417 bps` 的持仓回报。
+
+---
+
+## POST /strategies/convergence/execute
+
+对特定机会执行收敛交易。
+
+**请求头：** `X-API-Key: pm_live_sk_xxxxxxxxxxxxxxxx`
+
+**请求体：**
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "size": 5000.0
+}
+```
+
+策略在执行时会验证机会是否仍满足收敛条件（概率 ≥95%，距到期 ≤3 天）。若条件不再满足，请求将被拒绝。
+
+**响应 `201`：**
+
+```json
+{
+  "strategy_execution_id": "strat_exec_abc123",
+  "strategy": "convergence",
+  "order": {
+    "order_id": "ord_abc123",
+    "market_id": "0xabc123...",
+    "token_id": "217426331",
+    "side": "BUY",
+    "type": "LIMIT",
+    "price": 0.96,
+    "size": 5000.0,
+    "status": "OPEN",
+    "broker_fee_bps": 5,
+    "created_at": "2026-03-19T14:22:05Z"
+  },
+  "expected_profit": {
+    "at_resolution": 208.33,
+    "yield_bps": 417,
+    "broker_fee": 12.50,
+    "net_profit": 195.83
+  }
+}
+```
+
+---
+
+## GET /strategies/convergence/positions
+
+列出活跃的收敛持仓（未成交订单 + 部分成交）。
+
+**响应 `200`：**
+
+```json
+{
+  "positions": [
+    {
+      "strategy_execution_id": "strat_exec_abc123",
+      "market_id": "0xabc123...",
+      "market_title": "Will Candidate X win the 2026 State Election?",
+      "token_id": "217426331",
+      "outcome_label": "Yes",
+      "entry_price": 0.96,
+      "current_price": 0.97,
+      "size": 5000.0,
+      "size_filled": 5000.0,
+      "unrealized_pnl": 51.55,
+      "close_time": "2026-03-21T23:59:59Z",
+      "days_to_expiry": 2.4,
+      "order_status": "FILLED"
+    }
+  ],
+  "summary": {
+    "total_positions": 3,
+    "total_cost_basis": 14700.0,
+    "expected_profit_at_resolution": 612.24
+  }
+}
+```

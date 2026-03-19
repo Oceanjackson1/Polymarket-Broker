@@ -1,0 +1,291 @@
+---
+title: 订单 API
+description: 以托管或非托管模式下单、撤单并追踪预测市场订单
+---
+
+# 订单 API
+
+基础路径：`/api/v1/orders`
+
+所需权限作用域：写操作需要 `orders:write`，读操作需要 `markets:read`
+
+订单 API 同时支持托管模式（由 Broker 代为签名）和非托管模式（使用您自己的钱包签名）。
+
+## 订单对象
+
+所有订单端点均返回或引用如下订单对象：
+
+```json
+{
+  "order_id": "ord_abc123",
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "type": "LIMIT",
+  "price": 0.72,
+  "size": 100.0,
+  "size_filled": 45.0,
+  "size_remaining": 55.0,
+  "status": "PARTIALLY_FILLED",
+  "broker_fee_bps": 10,
+  "polymarket_order_id": "0x...",
+  "created_at": "2026-03-17T10:00:00Z",
+  "updated_at": "2026-03-17T10:01:00Z",
+  "expires_at": null
+}
+```
+
+**状态值：** `PENDING` `OPEN` `PARTIALLY_FILLED` `FILLED` `CANCELLED` `EXPIRED`
+
+## 端点列表
+
+| 方法 | 路径 | 描述 | 模式 |
+|---|---|---|---|
+| `POST` | `/orders` | 下单 | 托管 |
+| `POST` | `/orders/build` | 构建 EIP-712 载荷 | 非托管 |
+| `POST` | `/orders/submit` | 提交已签名订单 | 非托管 |
+| `GET` | `/orders` | 列出订单（分页） | 两种模式均支持 |
+| `GET` | `/orders/\{order_id\}` | 订单详情 | 两种模式均支持 |
+| `DELETE` | `/orders/\{order_id\}` | 撤销订单 | 两种模式均支持 |
+| `DELETE` | `/orders` | 撤销所有未成交订单 | 两种模式均支持 |
+
+---
+
+## POST /orders（托管模式）
+
+下单。Broker 使用运营方凭证签名并提交至 Polymarket。
+
+**请求头：** `X-API-Key: pm_live_sk_xxxxxxxxxxxxxxxx`
+
+**请求体：**
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "type": "LIMIT",
+  "price": 0.72,
+  "size": 100.0
+}
+```
+
+GTD 订单需额外添加 `expires_at`：
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "type": "GTD",
+  "price": 0.72,
+  "size": 100.0,
+  "expires_at": "2026-03-20T00:00:00Z"
+}
+```
+
+TWAP 订单：
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "type": "TWAP",
+  "price": 0.72,
+  "size": 1000.0,
+  "twap_intervals": 10,
+  "twap_interval_seconds": 60
+}
+```
+
+**响应 `201`：** 返回订单对象。
+
+TWAP 订单的响应中包含 `child_legs`：
+
+```json
+{
+  "order_id": "ord_twap_xxx",
+  "type": "TWAP",
+  "size": 1000.0,
+  "child_legs": ["ord_leg_1", "ord_leg_2", "ord_leg_3", "..."],
+  ...
+}
+```
+
+## 订单类型
+
+| 类型 | 描述 | 备注 |
+|---|---|---|
+| `LIMIT` | 限价单，有效至撤销（Good-Till-Cancelled） | 默认类型 |
+| `MARKET` | 市价单，立即成交或撤销（Fill-or-Kill） | 立即成交，否则撤销 |
+| `GTD` | 带有效期的限价单 | 需要 `expires_at` |
+| `TWAP` | 时间加权平均价格单 | Broker 拆分为子腿执行 |
+
+---
+
+## POST /orders/build（非托管模式）
+
+构建用于本地签名的 EIP-712 类型化订单载荷。
+
+**请求头：** `Authorization: Bearer <access_token>`
+
+**请求体：**
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "price": 0.72,
+  "size": 100.0
+}
+```
+
+**响应 `200`：**
+
+```json
+{
+  "eip712_payload": {
+    "domain": {
+      "name": "Polymarket CTF Exchange",
+      "version": "1",
+      "chainId": 137,
+      "verifyingContract": "0x..."
+    },
+    "types": {
+      "Order": [
+        { "name": "salt", "type": "uint256" },
+        { "name": "maker", "type": "address" },
+        { "name": "signer", "type": "address" },
+        { "name": "taker", "type": "address" },
+        { "name": "tokenId", "type": "uint256" },
+        { "name": "makerAmount", "type": "uint256" },
+        { "name": "takerAmount", "type": "uint256" },
+        { "name": "expiration", "type": "uint256" },
+        { "name": "nonce", "type": "uint256" },
+        { "name": "feeRateBps", "type": "uint256" },
+        { "name": "side", "type": "uint8" },
+        { "name": "signatureType", "type": "uint8" }
+      ]
+    },
+    "message": {
+      "feeRateBps": "10",
+      "makerAmount": "72000000",
+      "takerAmount": "100000000",
+      ...
+    }
+  },
+  "payload_hash": "0xhash...",
+  "expires_at": "2026-03-19T10:01:00Z"
+}
+```
+
+`payload_hash` 在服务端存储 60 秒。`feeRateBps` 由服务器根据您的订阅套餐注入，不可修改。
+
+---
+
+## POST /orders/submit（非托管模式）
+
+提交已签名的订单载荷。
+
+**请求头：** `Authorization: Bearer <access_token>`
+
+**请求体：**
+
+```json
+{
+  "payload_hash": "0xhash...",
+  "signature": "0xYourEIP712Signature..."
+}
+```
+
+Broker 会根据存储的哈希重新推导预期载荷并验证：
+1. 提交的 `payload_hash` 与存储的哈希一致（防篡改）
+2. 签名对该载荷有效
+
+**响应 `201`：** 返回订单对象。
+
+---
+
+## GET /orders
+
+列出您的订单，支持筛选。
+
+**查询参数：**
+
+| 参数 | 类型 | 默认值 | 描述 |
+|---|---|---|---|
+| `status` | string | — | 筛选：`OPEN`、`FILLED`、`CANCELLED` 等 |
+| `market_id` | string | — | 按市场筛选 |
+| `limit` | integer | 20 | 每页条数（最大 100） |
+| `cursor` | string | — | 分页游标 |
+| `sort` | string | `created_at:desc` | 排序方式 |
+
+**响应 `200`：**
+
+```json
+{
+  "data": [ ...Order objects... ],
+  "pagination": {
+    "cursor": "next_cursor",
+    "has_more": true,
+    "limit": 20
+  }
+}
+```
+
+---
+
+## GET /orders/\{order_id\}
+
+按 ID 获取单个订单。TWAP 订单将包含子腿状态。
+
+**响应 `200`：** 返回订单对象。
+
+---
+
+## DELETE /orders/\{order_id\}
+
+撤销单个订单。对于 TWAP 父订单，将撤销所有未成交的子腿，已成交的子腿正常结算。
+
+**响应 `200`：**
+
+```json
+{
+  "order_id": "ord_abc123",
+  "status": "CANCELLED",
+  "cancelled_at": "2026-03-19T14:30:00Z"
+}
+```
+
+---
+
+## DELETE /orders
+
+撤销所有当前未成交的订单（覆盖所有市场）。
+
+**响应 `200`：**
+
+```json
+{
+  "cancelled_count": 7,
+  "cancelled_ids": ["ord_1", "ord_2", "..."]
+}
+```
+
+---
+
+## 错误码
+
+| 错误码 | HTTP 状态 | 描述 |
+|---|---|---|
+| `MARKET_NOT_FOUND` | 404 | 市场 ID 不存在 |
+| `MARKET_CLOSED` | 400 | 市场已停止接受订单 |
+| `INSUFFICIENT_BALANCE` | 400 | USDC 余额不足 |
+| `ORDER_SIZE_TOO_LARGE` | 400 | 超出您套餐的单笔订单上限 |
+| `POSITION_CAP_EXCEEDED` | 400 | 已达到该市场的持仓上限 |
+| `INVALID_PRICE` | 400 | 价格不在有效范围内（0.01 至 0.99） |
+| `ORDER_NOT_FOUND` | 404 | 订单 ID 不存在 |
+| `ORDER_NOT_CANCELLABLE` | 400 | 订单已成交或已撤销 |
+| `UPSTREAM_ERROR` | 502 | Polymarket CLOB 返回错误 |

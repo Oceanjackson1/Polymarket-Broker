@@ -1,0 +1,207 @@
+---
+title: 体育数据 API
+description: 145 个体育项目的增强型订单簿数据及完整历史记录
+---
+
+# 体育数据 API
+
+基础路径：`/api/v1/data/sports`
+
+所需权限作用域：`data:read`
+
+体育数据 API 为 145 个体育及电竞类别提供增强型订单簿和赛事数据，包括每个赛事的完整历史订单簿——这些数据无法通过 Polymarket 官方接口直接获取。
+
+## 端点列表
+
+| 方法 | 路径 | 描述 |
+|---|---|---|
+| `GET` | `/data/sports/categories` | 列出所有支持的体育类别 |
+| `GET` | `/data/sports/\{sport\}/events` | 特定体育项目的赛事列表 |
+| `GET` | `/data/sports/\{sport\}/events/\{event_id\}/orderbook` | 某赛事的历史订单簿 |
+| `GET` | `/data/sports/\{sport\}/events/\{event_id\}/realized` | 已实现成交历史 |
+
+## 体育标识符格式
+
+体育项目通过 URL 安全的 slug 字符串标识，完整列表由 `/data/sports/categories` 返回。
+
+**示例：** `nba`、`nfl`、`epl`、`ufc`、`cs2`、`lol`、`nhl`、`mlb`、`atp`、`wta`
+
+---
+
+## GET /data/sports/categories
+
+列出所有支持的体育类别及其活跃赛事数量。
+
+**响应 `200`：**
+
+```json
+{
+  "categories": [
+    {
+      "slug": "nba",
+      "name": "NBA Basketball",
+      "active_events": 12,
+      "total_volume_24h": 2340567.89
+    },
+    {
+      "slug": "nfl",
+      "name": "NFL American Football",
+      "active_events": 0,
+      "total_volume_24h": 0
+    },
+    {
+      "slug": "epl",
+      "name": "English Premier League",
+      "active_events": 5,
+      "total_volume_24h": 876543.21
+    },
+    {
+      "slug": "ufc",
+      "name": "UFC Mixed Martial Arts",
+      "active_events": 3,
+      "total_volume_24h": 456789.01
+    },
+    {
+      "slug": "cs2",
+      "name": "Counter-Strike 2",
+      "active_events": 8,
+      "total_volume_24h": 234567.89
+    }
+  ],
+  "total_categories": 145
+}
+```
+
+---
+
+## GET /data/sports/\{sport\}/events
+
+列出特定体育类别的赛事。
+
+**路径参数：**
+
+| 参数 | 描述 |
+|---|---|
+| `sport` | 体育 slug（如 `nba`、`ufc`、`epl`） |
+
+**查询参数：**
+
+| 参数 | 类型 | 默认值 | 描述 |
+|---|---|---|---|
+| `status` | string | `active` | `active`、`completed`、`all` |
+| `limit` | integer | 20 | 每页条数（最大 100） |
+| `cursor` | string | — | 分页游标 |
+| `from` | ISO 8601 | — | 筛选该日期之后开始的赛事 |
+| `to` | ISO 8601 | — | 筛选该日期之前结束的赛事 |
+
+**响应 `200`：**
+
+```json
+{
+  "sport": "nba",
+  "data": [
+    {
+      "event_id": "sports_nba_gsw_lal_20260319",
+      "title": "Golden State Warriors vs LA Lakers",
+      "market_id": "0xabc123...",
+      "home_team": "Golden State Warriors",
+      "away_team": "LA Lakers",
+      "game_time": "2026-03-19T20:30:00Z",
+      "status": "active",
+      "outcomes": [
+        {
+          "token_id": "217426331",
+          "label": "Golden State Warriors",
+          "current_price": 0.45
+        },
+        {
+          "token_id": "217426332",
+          "label": "LA Lakers",
+          "current_price": 0.55
+        }
+      ],
+      "volume_24h": 87654.32,
+      "data_updated_at": "2026-03-19T14:20:00Z"
+    }
+  ],
+  "pagination": { "cursor": "...", "has_more": false, "limit": 20 }
+}
+```
+
+---
+
+## GET /data/sports/\{sport\}/events/\{event_id\}/orderbook
+
+获取特定赛事的完整历史订单簿。这是本 API 的核心差异化功能——Polymarket 官方接口仅返回当前状态，不提供完整时序数据。
+
+**查询参数：**
+
+| 参数 | 类型 | 默认值 | 描述 |
+|---|---|---|---|
+| `token_id` | string | — | 结果代币 ID |
+| `from` | ISO 8601 | 赛事开始时间 | 历史窗口起始 |
+| `to` | ISO 8601 | 当前时间 | 历史窗口结束 |
+| `interval` | string | `1m` | 快照间隔：`1s`、`1m`、`5m`、`1h` |
+
+**响应 `200`：**
+
+```json
+{
+  "event_id": "sports_nba_gsw_lal_20260319",
+  "token_id": "217426331",
+  "interval": "1m",
+  "stale": false,
+  "data_updated_at": "2026-03-19T14:20:00Z",
+  "snapshots": [
+    {
+      "timestamp": "2026-03-19T14:00:00Z",
+      "bids": [
+        { "price": 0.44, "size": 500.0 },
+        { "price": 0.43, "size": 1200.0 }
+      ],
+      "asks": [
+        { "price": 0.45, "size": 300.0 },
+        { "price": 0.46, "size": 800.0 }
+      ],
+      "mid": 0.445
+    },
+    {
+      "timestamp": "2026-03-19T14:01:00Z",
+      "bids": [...],
+      "asks": [...],
+      "mid": 0.448
+    }
+  ]
+}
+```
+
+<Callout type="info">
+  若数据采集器在 5 分钟内未推送新数据，响应将包含 `"stale": true`。`data_updated_at` 字段始终显示最后一次刷新时间。
+</Callout>
+
+---
+
+## GET /data/sports/\{sport\}/events/\{event_id\}/realized
+
+获取特定赛事结果的已实现成交记录（已撮合的订单）。
+
+**查询参数：** `token_id`、`from`、`to`、`limit`、`cursor`
+
+**响应 `200`：**
+
+```json
+{
+  "event_id": "sports_nba_gsw_lal_20260319",
+  "token_id": "217426331",
+  "data": [
+    {
+      "trade_id": "trade_abc",
+      "price": 0.45,
+      "size": 150.0,
+      "side": "BUY",
+      "timestamp": "2026-03-19T14:15:22Z"
+    }
+  ],
+  "pagination": { "cursor": "...", "has_more": false, "limit": 50 }
+}
+```

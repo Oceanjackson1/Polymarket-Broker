@@ -1,0 +1,234 @@
+---
+title: NBA 数据 API
+description: 实时 NBA 比分 × Polymarket 隐含概率融合分析，附带偏差信号
+---
+
+# NBA 数据 API
+
+基础路径：`/api/v1/data/nba`
+
+所需权限作用域：`data:read`
+
+NBA 数据 API 将实时 NBA 比赛数据（ESPN + NBA 官方数据源）与 Polymarket CLOB 实时赔率融合，生成偏差信号——识别 Polymarket 定价与比赛状态所隐含概率之间的偏差。
+
+此数据无法通过 Polymarket 官方接口直接获取。NBA 数据采集器在比赛进行期间每 30 秒更新一次。
+
+## 端点列表
+
+| 方法 | 路径 | 描述 |
+|---|---|---|
+| `GET` | `/data/nba/games` | 今日及即将进行的 NBA 比赛 |
+| `GET` | `/data/nba/games/\{game_id\}` | 含实时比分的比赛详情 |
+| `GET` | `/data/nba/games/\{game_id\}/fusion` | 实时比分 × Polymarket 赔率 + 偏差信号 |
+| `GET` | `/data/nba/games/\{game_id\}/orderbook` | 该比赛的 Polymarket 订单簿 |
+| `WS` | `/ws/data/nba/\{game_id\}/live` | 实时比分 + 赔率同步 |
+
+---
+
+## GET /data/nba/games
+
+列出今日及即将进行的 NBA 比赛及其关联的 Polymarket 市场。
+
+**查询参数：**
+
+| 参数 | 类型 | 默认值 | 描述 |
+|---|---|---|---|
+| `date` | `YYYY-MM-DD` | 今日（UTC） | 指定日期 |
+| `status` | string | `all` | `scheduled`、`live`、`final`、`all` |
+
+**响应 `200`：**
+
+```json
+{
+  "date": "2026-03-19",
+  "games": [
+    {
+      "game_id": "nba_2026_gsw_lal",
+      "home_team": "Golden State Warriors",
+      "away_team": "LA Lakers",
+      "home_team_abbr": "GSW",
+      "away_team_abbr": "LAL",
+      "scheduled_at": "2026-03-19T20:30:00Z",
+      "status": "live",
+      "market_id": "0xabc123...",
+      "has_polymarket_market": true,
+      "data_updated_at": "2026-03-19T14:22:00Z"
+    },
+    {
+      "game_id": "nba_2026_bos_mia",
+      "home_team": "Boston Celtics",
+      "away_team": "Miami Heat",
+      "home_team_abbr": "BOS",
+      "away_team_abbr": "MIA",
+      "scheduled_at": "2026-03-19T22:00:00Z",
+      "status": "scheduled",
+      "market_id": "0xdef456...",
+      "has_polymarket_market": true,
+      "data_updated_at": "2026-03-19T14:20:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/nba/games/\{game_id\}
+
+比赛详情，包括实时比分、节次及剩余时间。
+
+**响应 `200`：**
+
+```json
+{
+  "game_id": "nba_2026_gsw_lal",
+  "home_team": "Golden State Warriors",
+  "away_team": "LA Lakers",
+  "home_team_abbr": "GSW",
+  "away_team_abbr": "LAL",
+  "score": {
+    "home": 87,
+    "away": 94,
+    "quarter": 3,
+    "time_remaining": "4:22",
+    "period_type": "regular"
+  },
+  "status": "live",
+  "scheduled_at": "2026-03-19T20:30:00Z",
+  "market_id": "0xabc123...",
+  "stale": false,
+  "data_updated_at": "2026-03-19T22:14:00Z"
+}
+```
+
+---
+
+## GET /data/nba/games/\{game_id\}/fusion
+
+核心旗舰端点。返回实时比赛状态与 Polymarket 当前隐含概率的交叉分析，以及计算出的偏差信号，用于指示定价偏离情况。
+
+**响应 `200`：**
+
+```json
+{
+  "game_id": "nba_2026_gsw_lal",
+  "score": {
+    "home": 87,
+    "away": 94,
+    "quarter": 3,
+    "time_remaining": "4:22"
+  },
+  "polymarket": {
+    "home_win_prob": 0.31,
+    "away_win_prob": 0.69,
+    "last_trade_price": 0.69,
+    "spread": 0.02,
+    "market_id": "0xabc123..."
+  },
+  "model": {
+    "home_win_prob": 0.35,
+    "away_win_prob": 0.65,
+    "model_source": "in_game_win_probability"
+  },
+  "bias_signal": {
+    "direction": "HOME_UNDERPRICED",
+    "magnitude_bps": 420,
+    "description": "Model gives GSW 35% chance; market prices them at 31%. 400bps gap."
+  },
+  "stale": false,
+  "updated_at": "2026-03-17T22:14:05Z"
+}
+```
+
+### 偏差信号
+
+| 字段 | 描述 |
+|---|---|
+| `direction` | `HOME_UNDERPRICED` — 主队模型概率高于市场价格。`AWAY_UNDERPRICED` — 客队模型概率高于市场价格。`NEUTRAL` — 偏差低于 300 个基点阈值。 |
+| `magnitude_bps` | 模型概率与市场概率之间的绝对差值（单位：基点） |
+
+偏差信号阈值为 300 个基点，低于此阈值的信号将被归类为 `NEUTRAL`。
+
+### 数据陈旧处理
+
+若 NBA 数据采集器在 30 秒内未推送新数据，响应将包含 `"stale": true`。`updated_at` 字段始终显示最后一次刷新时间。实时交易信号的使用方应自行实现陈旧容忍机制。
+
+---
+
+## GET /data/nba/games/\{game_id\}/orderbook
+
+该比赛胜负市场的 Polymarket CLOB 订单簿。
+
+**查询参数：** `depth`（默认 10）
+
+**响应 `200`：**
+
+```json
+{
+  "game_id": "nba_2026_gsw_lal",
+  "market_id": "0xabc123...",
+  "home_outcome": {
+    "token_id": "217426331",
+    "label": "Golden State Warriors",
+    "bids": [
+      { "price": 0.30, "size": 1200.0 },
+      { "price": 0.29, "size": 800.0 }
+    ],
+    "asks": [
+      { "price": 0.31, "size": 500.0 },
+      { "price": 0.32, "size": 2000.0 }
+    ],
+    "mid": 0.305
+  },
+  "away_outcome": {
+    "token_id": "217426332",
+    "label": "LA Lakers",
+    "bids": [
+      { "price": 0.68, "size": 3000.0 },
+      { "price": 0.67, "size": 1500.0 }
+    ],
+    "asks": [
+      { "price": 0.69, "size": 1000.0 },
+      { "price": 0.70, "size": 2500.0 }
+    ],
+    "mid": 0.685
+  },
+  "timestamp": "2026-03-19T22:14:05Z"
+}
+```
+
+---
+
+## WS /ws/data/nba/\{game_id\}/live
+
+实时 WebSocket 流，同步 NBA 实时比分更新与 Polymarket 赔率变化。
+
+**连接地址：** `wss://api.broker.polymarket.com/ws/data/nba/\{game_id\}/live`
+
+**比分更新消息：**
+
+```json
+{
+  "type": "score_update",
+  "game_id": "nba_2026_gsw_lal",
+  "score": { "home": 89, "away": 94, "quarter": 3, "time_remaining": "3:45" },
+  "timestamp": "2026-03-19T22:14:30Z"
+}
+```
+
+**赔率更新消息：**
+
+```json
+{
+  "type": "odds_update",
+  "game_id": "nba_2026_gsw_lal",
+  "home_win_prob": 0.32,
+  "away_win_prob": 0.68,
+  "bias_signal": {
+    "direction": "HOME_UNDERPRICED",
+    "magnitude_bps": 300
+  },
+  "timestamp": "2026-03-19T22:14:32Z"
+}
+```
+
+WebSocket 连接不计入每日 API 调用配额。

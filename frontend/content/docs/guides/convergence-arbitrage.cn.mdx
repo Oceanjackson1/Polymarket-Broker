@@ -1,0 +1,209 @@
+---
+title: 收敛套利
+description: 系统性地发现并交易接近确定结果的市场以获取收益
+---
+
+# 收敛套利
+
+收敛套利（convergence arbitrage）是指在 Polymarket 上买入几乎确定会结算的结果代币，捕获当前价格（例如 0.96）与结算价值（1.0）之间的价差。
+
+该策略风险较低，成功仓位可获得 50-200 个基点的收益。但它并非零风险：延迟结算、争议或预期结果的意外逆转都可能影响表现。
+
+## 原理
+
+Polymarket 市场并不会在结果确定的瞬间结算——它们在官方来源确认结果并向 Polygon 提交交易后才会结算。在结算前数小时内：
+
+1. 许多市场参与者会退出以重新部署资金，对获胜结果的价格造成轻微下行压力。
+2. 新参与者可能不会注意到这一机会，尤其是小众市场。
+3. 最终结果是：一个 99% 确定的结果可能以 0.97 的价格成交，隐含近乎零方向性风险的 200 个基点收益。
+
+## 使用策略 API
+
+最简便的方式是使用内置的策略 API：
+
+```python
+import httpx
+
+API_KEY = "pm_live_sk_xxxxxxxxxxxxxxxx"
+BASE_URL = "https://api.broker.polymarket.com/api/v1"
+headers = {"X-API-Key": API_KEY}
+
+# Get current opportunities
+opps = httpx.get(
+    f"{BASE_URL}/strategies/convergence/opportunities",
+    params={"min_prob": 0.95, "max_days": 3, "min_volume": 5000},
+    headers=headers
+).json()
+
+for opp in opps["opportunities"]:
+    print(
+        f"{opp['market_title'][:60]:<60} | "
+        f"p={opp['current_price']:.3f} | "
+        f"yield={opp['expected_yield_bps']:.0f}bps | "
+        f"days={opp['days_to_expiry']:.1f}"
+    )
+```
+
+**示例输出：**
+
+```
+Will Candidate X win the 2026 State Election?           | p=0.960 | yield=417bps | days=2.4
+Will Bitcoin close above $50,000 on March 20?           | p=0.970 | yield=309bps | days=1.4
+Will Team Y advance in the tournament?                  | p=0.985 | yield=152bps | days=0.8
+```
+
+## 评估机会
+
+并非所有收敛套利机会都相同。请从以下维度评估每个机会：
+
+**收益率与天数之比：** 2.4 天内 417 个基点的收益年化约 62%。0.8 天内 152 个基点的收益年化约 69%。后者的资本效率实际上更高。
+
+**结算来源可靠性：** 通过官方选举结果或链上（on-chain）数据结算的市场，争议风险低于通过新闻文章或主观标准结算的市场。
+
+**市场类别：**
+
+| 类别 | 说明 |
+|---|---|
+| 政治 | 官方认证可能延迟；争议风险低但非零 |
+| 加密货币 | 链上验证快速且确定；最安全的类别 |
+| 体育 | 比分客观；终场哨响后风险极低 |
+| 科技 | 存在主观标准风险（例如"X 是否在 Y 之前发布？"） |
+
+**流动性：** 确认实际可以以显示价格成交：
+
+```python
+orderbook = httpx.get(
+    f"{BASE_URL}/markets/{opp['market_id']}/orderbook",
+    params={"token_id": opp["token_id"], "depth": 5},
+    headers=headers
+).json()
+
+best_ask = orderbook["asks"][0]["price"]
+ask_depth_top3 = sum(level["size"] for level in orderbook["asks"][:3])
+print(f"Best ask: {best_ask:.4f}, depth: ${ask_depth_top3:,.0f}")
+
+# If best_ask is significantly above current_price from opportunities endpoint,
+# the market moved — re-evaluate
+if best_ask > opp["current_price"] + 0.005:
+    print("Price slipped — opportunity may have closed")
+```
+
+## 通过策略 API 执行
+
+```python
+# Execute a convergence trade
+order = httpx.post(
+    f"{BASE_URL}/strategies/convergence/execute",
+    headers={**headers, "Content-Type": "application/json"},
+    json={
+        "market_id": opp["market_id"],
+        "token_id": opp["token_id"],
+        "size": 2000.0   # $2,000 USDC
+    }
+).json()
+
+print(f"Executed: {order['strategy_execution_id']}")
+print(f"Expected net profit: ${order['expected_profit']['net_profit']:.2f}")
+```
+
+策略 API 会在执行时验证机会是否仍满足条件。若市场已发生变动（价格跌破 0.95 或到期时间超过 3 天），系统将返回错误并拒绝执行。
+
+## 手动执行
+
+你也可以直接使用订单 API 以获得更多控制权：
+
+```python
+order = httpx.post(
+    f"{BASE_URL}/orders",
+    headers={**headers, "Content-Type": "application/json"},
+    json={
+        "market_id": "0xabc123...",
+        "token_id": "217426331",
+        "side": "BUY",
+        "type": "LIMIT",
+        "price": 0.962,   # Slightly above best ask for fill probability
+        "size": 2000.0
+    }
+).json()
+```
+
+## 监控活跃仓位
+
+```python
+positions = httpx.get(
+    f"{BASE_URL}/strategies/convergence/positions",
+    headers=headers
+).json()
+
+for pos in positions["positions"]:
+    days_left = pos["days_to_expiry"]
+    unrealized = pos["unrealized_pnl"]
+    print(f"{pos['market_title'][:50]:<50} | pnl=${unrealized:.2f} | {days_left:.1f}d left")
+```
+
+## 全自动循环
+
+```python
+import time
+
+SCAN_INTERVAL = 300        # Every 5 minutes
+MAX_POSITION_PER_MARKET = 3000.0
+MIN_YIELD_BPS = 300
+MAX_DAYS = 2
+
+def run_convergence_bot():
+    while True:
+        opps = httpx.get(
+            f"{BASE_URL}/strategies/convergence/opportunities",
+            params={
+                "min_prob": 0.96,
+                "max_days": MAX_DAYS,
+                "min_volume": 10000
+            },
+            headers=headers
+        ).json()
+
+        for opp in opps["opportunities"]:
+            if opp["expected_yield_bps"] < MIN_YIELD_BPS:
+                continue
+
+            # Check we don't already have a position in this market
+            existing = httpx.get(
+                f"{BASE_URL}/orders",
+                params={"market_id": opp["market_id"], "status": "OPEN"},
+                headers=headers
+            ).json()
+            if existing["data"]:
+                continue
+
+            size = min(MAX_POSITION_PER_MARKET, opp["max_position_usdc"])
+
+            result = httpx.post(
+                f"{BASE_URL}/strategies/convergence/execute",
+                headers={**headers, "Content-Type": "application/json"},
+                json={
+                    "market_id": opp["market_id"],
+                    "token_id": opp["token_id"],
+                    "size": size
+                }
+            )
+            if result.status_code == 201:
+                data = result.json()
+                print(f"[+] Opened: {opp['market_title'][:50]} | ${size:,.0f} | {opp['expected_yield_bps']:.0f}bps")
+            else:
+                print(f"[-] Failed: {result.json()}")
+
+        time.sleep(SCAN_INTERVAL)
+
+run_convergence_bot()
+```
+
+## 风险控制
+
+平台自动执行以下风险控制措施：
+
+- **单笔订单最大规模限制**（按账户层级可配置）
+- **单市场仓位上限**
+- **每日回撤熔断机制** —— 若当日亏损超过阈值，交易将暂停，直到你通过 `POST /api/v1/developer/risk/reset` 手动重置
+
+请设置适当的仓位大小，并通过 `GET /api/v1/developer/usage` 监控熔断机制状态。

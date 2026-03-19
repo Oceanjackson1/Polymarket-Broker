@@ -1,0 +1,191 @@
+---
+title: 分析 API
+description: 基于 DeepSeek 的 AI 驱动市场分析，提供定价偏差与方向性信号
+---
+
+# 分析 API
+
+基础路径：`/api/v1/analysis`
+
+所需权限作用域：`analysis:read`
+
+分析 API 提供基于 DeepSeek 的 AI 分析，覆盖单个市场、NBA 比赛及全市场扫描。所有用户（包括自有应用和第三方开发者）同步接收信号，无内部优先队列。
+
+**免费套餐配额：** 所有 `/analysis/` 端点共享每日 10 次调用上限。
+
+## 端点列表
+
+| 方法 | 路径 | 描述 |
+|---|---|---|
+| `GET` | `/analysis/market/\{market_id\}` | AI 概率估算 vs 市场价格 |
+| `POST` | `/analysis/scan` | 全市场定价偏差扫描 |
+| `GET` | `/analysis/nba/\{game_id\}` | NBA 比赛 AI 方向性建议 |
+| `POST` | `/analysis/ask` | 自然语言查询 |
+
+---
+
+## GET /analysis/market/\{market_id\}
+
+获取某市场结果的 AI 概率估算，并与当前市场价格进行对比。
+
+**查询参数：** `token_id`（可选，默认为第一个结果）
+
+**响应 `200`：**
+
+```json
+{
+  "market_id": "0xabc123...",
+  "market_title": "Will the LA Lakers win the 2026 NBA Championship?",
+  "token_id": "217426331",
+  "outcome_label": "Yes",
+  "market_price": 0.12,
+  "ai_estimate": 0.09,
+  "bias_direction": "MARKET_OVERPRICED",
+  "bias_bps": 300,
+  "confidence": "medium",
+  "reasoning": "Lakers are currently 10th in the Western Conference standings with a -3.2 net rating. Historical base rate for a sub-.500 team winning the championship is approximately 8-10%. Current market price of 12% appears slightly elevated.",
+  "model": "deepseek-r1",
+  "generated_at": "2026-03-19T14:22:05Z"
+}
+```
+
+| 字段 | 描述 |
+|---|---|
+| `bias_direction` | `MARKET_OVERPRICED` — AI 给出的概率低于市场。`MARKET_UNDERPRICED` — AI 给出的概率高于市场。`NEUTRAL` — 差距在 300 个基点以内。 |
+| `bias_bps` | 绝对差值（单位：基点） |
+| `confidence` | `low`（低）/ `medium`（中）/ `high`（高） |
+| `reasoning` | AI 估算的自然语言解释 |
+
+---
+
+## POST /analysis/scan
+
+全市场扫描，返回定价偏差最大的机会。可用于发现所有类别中定价最不合理的市场。
+
+**请求体：**
+
+```json
+{
+  "categories": ["sports", "crypto"],
+  "min_volume_24h": 10000,
+  "min_bias_bps": 500,
+  "limit": 20
+}
+```
+
+所有字段均为可选。默认扫描所有活跃市场，`min_bias_bps` 默认为 300。
+
+**响应 `200`：**
+
+```json
+{
+  "opportunities": [
+    {
+      "market_id": "0xabc123...",
+      "market_title": "Will BTC close above $70,000 on March 31?",
+      "category": "crypto",
+      "token_id": "btc70k_yes",
+      "outcome_label": "Yes",
+      "market_price": 0.35,
+      "ai_estimate": 0.47,
+      "bias_direction": "MARKET_UNDERPRICED",
+      "bias_bps": 1200,
+      "confidence": "high",
+      "volume_24h": 234567.89,
+      "suggested_action": "BUY Yes at 0.35"
+    },
+    {
+      "market_id": "0xdef456...",
+      "market_title": "Will Elon Musk tweet more than 20 times today?",
+      "category": "technology",
+      "token_id": "elon20_yes",
+      "outcome_label": "Yes",
+      "market_price": 0.72,
+      "ai_estimate": 0.58,
+      "bias_direction": "MARKET_OVERPRICED",
+      "bias_bps": 1400,
+      "confidence": "medium",
+      "volume_24h": 12345.67,
+      "suggested_action": "BUY No at 0.28"
+    }
+  ],
+  "scan_metadata": {
+    "markets_scanned": 847,
+    "markets_with_bias": 43,
+    "scan_duration_ms": 2340,
+    "generated_at": "2026-03-19T14:22:05Z"
+  }
+}
+```
+
+---
+
+## GET /analysis/nba/\{game_id\}
+
+针对 NBA 比赛的 AI 方向性建议，融合了来自 fusion 端点的实时比赛状态数据。
+
+**响应 `200`：**
+
+```json
+{
+  "game_id": "nba_2026_gsw_lal",
+  "game_state": {
+    "score": { "home": 87, "away": 94, "quarter": 3, "time_remaining": "4:22" },
+    "home_team": "Golden State Warriors",
+    "away_team": "LA Lakers"
+  },
+  "polymarket": {
+    "home_win_prob": 0.31,
+    "away_win_prob": 0.69
+  },
+  "ai_analysis": {
+    "home_win_prob_estimate": 0.35,
+    "away_win_prob_estimate": 0.65,
+    "directional_suggestion": "BUY Golden State Warriors",
+    "confidence": "medium",
+    "reasoning": "Down 7 points in the 3rd quarter, GSW has historically covered this deficit 35% of the time (based on similar game states). Current market implies 31% probability. The 400 bps gap suggests mild alpha in backing GSW at current prices, particularly given Curry's 28-point performance today.",
+    "bias_signal": {
+      "direction": "HOME_UNDERPRICED",
+      "magnitude_bps": 420
+    }
+  },
+  "model": "deepseek-r1",
+  "generated_at": "2026-03-19T22:14:30Z"
+}
+```
+
+---
+
+## POST /analysis/ask
+
+提交关于任意市场或主题的自然语言查询。
+
+**请求体：**
+
+```json
+{
+  "query": "What's the best opportunity in NBA markets right now?",
+  "context": {
+    "include_live_games": true,
+    "include_market_data": true
+  }
+}
+```
+
+**响应 `200`：**
+
+```json
+{
+  "query": "What's the best opportunity in NBA markets right now?",
+  "answer": "Based on current game states and Polymarket odds, the most attractive opportunity is Golden State Warriors in the GSW vs LAL game currently in the 3rd quarter. The model estimates GSW at 35% win probability while the market prices them at 31%, representing a 400bps gap. Volume is strong at $87k today, providing reasonable liquidity for a position up to $5,000. The suggested entry: BUY Golden State Warriors outcome at 0.31 with a target of 0.35 (if the market corrects) or 1.0 (on resolution).",
+  "referenced_markets": [
+    {
+      "market_id": "0xabc123...",
+      "title": "GSW vs LAL - March 19",
+      "current_price": 0.31
+    }
+  ],
+  "model": "deepseek-r1",
+  "generated_at": "2026-03-19T14:22:05Z"
+}
+```

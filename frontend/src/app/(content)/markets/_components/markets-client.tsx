@@ -27,9 +27,10 @@ function ProbabilityBar({ pct }: { pct: number }) {
   );
 }
 
-function MarketCard({ market }: { market: Market }) {
+function MarketCard({ market, index }: { market: Market; index: number }) {
+  const staggerN = Math.min((index % 6) + 1, 6);
   return (
-    <div className="flex flex-col rounded-xl border border-border-subtle bg-bg-card p-5 transition-colors hover:border-accent-gold/30">
+    <div className={`hover-glow animate-fade-in stagger-${staggerN} flex flex-col rounded-xl border border-border-subtle bg-bg-card p-5 transition-colors hover:border-accent-gold/30`}>
       {/* Category badge */}
       <div className="mb-3 flex items-center gap-2">
         <span className="rounded bg-bg-elevated px-2 py-0.5 font-mono text-[10px] text-text-muted">
@@ -133,8 +134,8 @@ export function MarketsClient({ markets }: { markets: Market[] }) {
       {/* Market cards grid — 3 columns */}
       {filtered.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((market) => (
-            <MarketCard key={market.slug} market={market} />
+          {filtered.map((market, i) => (
+            <MarketCard key={market.slug} market={market} index={i} />
           ))}
         </div>
       ) : (

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MOCK_MARKETS } from "../page";
+import { AnimatedProbability } from "./_components/animated-probability";
 
 // ── generateStaticParams — build all known market pages at build time ─────────
 
@@ -176,14 +177,7 @@ export default async function MarketDetailPage({
               {market.title}
             </h1>
             <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-baseline gap-2">
-                <span className="font-mono text-4xl font-bold text-accent-gold">
-                  {market.probability}%
-                </span>
-                <span className="text-lg font-medium text-text-secondary">
-                  {market.yesLabel}
-                </span>
-              </div>
+              <AnimatedProbability probability={market.probability} yesLabel={market.yesLabel} />
               <div className="h-8 w-px bg-border-subtle" />
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-text-muted">
@@ -350,7 +344,7 @@ export default async function MarketDetailPage({
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="rounded-lg bg-accent-gold px-5 py-2.5 text-sm font-semibold text-bg-base transition-colors hover:bg-accent-gold-hover"
+                  className="btn-premium rounded-lg bg-accent-gold px-5 py-2.5 text-sm font-semibold text-bg-base transition-colors hover:bg-accent-gold-hover"
                 >
                   Trade Now →
                 </Link>

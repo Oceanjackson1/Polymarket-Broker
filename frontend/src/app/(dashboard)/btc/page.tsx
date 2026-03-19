@@ -60,7 +60,7 @@ function TimeframeCard({ tf }: { tf: TimeframeCardData }) {
           style={{ width: `${prob * 100}%` }}
         />
       </div>
-      <button className="mt-3 rounded border border-border-default bg-bg-elevated px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-accent-gold/40 hover:text-text-primary">
+      <button className="btn-premium mt-3 rounded border border-border-default bg-bg-elevated px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-accent-gold/40 hover:text-text-primary">
         Trade →
       </button>
     </div>
@@ -114,7 +114,7 @@ export default function BTCPage() {
           {/* WebSocket connection indicator */}
           {isConnected ? (
             <span className="flex items-center gap-1.5 rounded bg-profit-bg px-2 py-0.5 text-[10px] font-semibold text-profit">
-              <span className="h-1.5 w-1.5 rounded-full bg-profit" />
+              <span className="live-dot h-1.5 w-1.5 rounded-full bg-profit" />
               WS LIVE
             </span>
           ) : (
@@ -157,8 +157,10 @@ export default function BTCPage() {
         </div>
       ) : (
         <div className="mb-6 grid grid-cols-4 gap-4">
-          {predictions.map((tf) => (
-            <TimeframeCard key={tf.timeframe} tf={tf} />
+          {predictions.map((tf, i) => (
+            <div key={tf.timeframe} className={`animate-fade-in stagger-${Math.min(i + 1, 6)}`}>
+              <TimeframeCard tf={tf} />
+            </div>
           ))}
         </div>
       )}

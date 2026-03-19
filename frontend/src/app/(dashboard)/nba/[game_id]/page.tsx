@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import { motion } from "motion/react";
 import { useNbaFusion } from "@/lib/hooks/use-nba";
 import { useNbaLive } from "@/lib/hooks/use-nba-live";
 
@@ -34,7 +35,7 @@ function SignalBar({ magnitude }: { magnitude: number | null }) {
 function LiveBadge({ connected }: { connected: boolean }) {
   return connected ? (
     <span className="flex items-center gap-1 rounded bg-profit-bg px-2 py-0.5 text-[10px] font-semibold text-profit">
-      <span className="h-1.5 w-1.5 rounded-full bg-profit" />
+      <span className="live-dot h-1.5 w-1.5 rounded-full bg-profit" />
       LIVE
     </span>
   ) : (
@@ -124,6 +125,9 @@ export default function NBAGamePage({
     { time: "Q4 4:22", homeOdds: homeWinProb, score: `${score.home}-${score.away}` },
   ];
 
+  // Determine if bias signal is "Strong" (magnitude > 400bps)
+  const isStrongSignal = (magnitudeBps ?? 0) > 400;
+
   return (
     <div className="flex min-h-full flex-col gap-0">
       {/* ── Stale Warning Banner ─────────────────────────── */}
@@ -145,9 +149,14 @@ export default function NBAGamePage({
           <div className="flex flex-1 items-center justify-center gap-8">
             <div className="text-right">
               <p className="text-sm text-text-secondary">{homeShort}</p>
-              <p className="font-mono text-4xl font-bold text-text-primary">
+              <motion.p
+                className="font-mono text-4xl font-bold text-text-primary"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
                 {score.home}
-              </p>
+              </motion.p>
             </div>
             <div className="text-center">
               <p className="font-mono text-xs text-text-muted">
@@ -159,9 +168,14 @@ export default function NBAGamePage({
             </div>
             <div className="text-left">
               <p className="text-sm text-text-secondary">{awayShort}</p>
-              <p className="font-mono text-4xl font-bold text-text-primary">
+              <motion.p
+                className="font-mono text-4xl font-bold text-text-primary"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.05 }}
+              >
                 {score.away}
-              </p>
+              </motion.p>
             </div>
           </div>
           <div className="text-right">
@@ -215,7 +229,7 @@ export default function NBAGamePage({
         </div>
 
         {/* Bias Signal */}
-        <div className="bg-bg-base p-5">
+        <div className={`bg-bg-base p-5 ${isStrongSignal ? "gradient-border" : ""}`}>
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
             AI Bias Signal
           </p>
@@ -346,7 +360,7 @@ export default function NBAGamePage({
                 </span>
               </div>
             </div>
-            <button className="w-full rounded bg-accent-gold px-4 py-2.5 text-sm font-semibold text-bg-base transition-colors hover:bg-accent-gold-hover">
+            <button className="btn-premium w-full rounded bg-accent-gold px-4 py-2.5 text-sm font-semibold text-bg-base transition-colors hover:bg-accent-gold-hover">
               Trade →
             </button>
           </div>

@@ -122,12 +122,12 @@ export default function PricingPage() {
       <section className="border-t border-border-subtle bg-bg-card">
         <div className="mx-auto max-w-7xl px-6 py-24">
           <div className="grid gap-8 md:grid-cols-3">
-            {tiers.map((tier) => (
+            {tiers.map((tier, i) => (
               <div
                 key={tier.name}
-                className={`relative flex flex-col rounded-xl border p-8 ${
+                className={`animate-fade-in stagger-${i + 1} relative flex flex-col rounded-xl border p-8 ${
                   tier.highlight
-                    ? "border-accent-gold bg-bg-base shadow-lg"
+                    ? "gradient-border-gold border-accent-gold bg-bg-base shadow-lg"
                     : "border-border-subtle bg-bg-base"
                 }`}
               >
@@ -185,7 +185,7 @@ export default function PricingPage() {
                 {/* CTA */}
                 <Link
                   href={tier.ctaHref}
-                  className={`block rounded-lg px-6 py-3 text-center text-sm font-semibold transition-colors ${
+                  className={`btn-premium block rounded-lg px-6 py-3 text-center text-sm font-semibold transition-colors ${
                     tier.highlight
                       ? "bg-accent-gold text-bg-base hover:bg-accent-gold-hover"
                       : "border border-border-default text-text-primary hover:bg-bg-elevated"

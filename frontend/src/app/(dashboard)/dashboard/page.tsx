@@ -3,12 +3,7 @@
 import { useBalance, usePnl, usePositions } from "@/lib/hooks/use-portfolio";
 import { useNbaGames } from "@/lib/hooks/use-nba";
 import { useBtcPredictions } from "@/lib/hooks/use-btc";
-
-function Skeleton({ className = "" }: { className?: string }) {
-  return (
-    <div className={`animate-pulse rounded bg-bg-elevated ${className}`} />
-  );
-}
+import { Shimmer } from "@/components/ui/shimmer";
 
 export default function DashboardPage() {
   const balance = useBalance();
@@ -34,10 +29,10 @@ export default function DashboardPage() {
       {/* Top Stats Row */}
       <div className="mb-8 grid grid-cols-4 gap-4">
         {/* Total Balance */}
-        <div className="rounded-lg border border-border-subtle bg-bg-card p-5">
+        <div className="animate-fade-in stagger-1 rounded-lg border border-border-subtle bg-bg-card p-5">
           <p className="text-xs text-text-muted">总资产</p>
           {balance.isLoading ? (
-            <Skeleton className="mt-2 h-8 w-28" />
+            <Shimmer className="mt-2 h-8 w-28" />
           ) : balance.error ? (
             <p className="mt-1 font-mono text-2xl font-semibold text-loss">—</p>
           ) : (
@@ -48,10 +43,10 @@ export default function DashboardPage() {
         </div>
 
         {/* PnL */}
-        <div className="rounded-lg border border-border-subtle bg-bg-card p-5">
+        <div className="animate-fade-in stagger-2 rounded-lg border border-border-subtle bg-bg-card p-5">
           <p className="text-xs text-text-muted">今日盈亏</p>
           {pnl.isLoading ? (
-            <Skeleton className="mt-2 h-8 w-28" />
+            <Shimmer className="mt-2 h-8 w-28" />
           ) : pnl.error ? (
             <p className="mt-1 font-mono text-2xl font-semibold text-loss">—</p>
           ) : (
@@ -71,10 +66,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Active Positions count */}
-        <div className="rounded-lg border border-border-subtle bg-bg-card p-5">
+        <div className="animate-fade-in stagger-3 rounded-lg border border-border-subtle bg-bg-card p-5">
           <p className="text-xs text-text-muted">活跃仓位</p>
           {positions.isLoading ? (
-            <Skeleton className="mt-2 h-8 w-16" />
+            <Shimmer className="mt-2 h-8 w-16" />
           ) : positions.error ? (
             <p className="mt-1 font-mono text-2xl font-semibold text-loss">—</p>
           ) : (
@@ -85,10 +80,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Available / Locked */}
-        <div className="rounded-lg border border-border-subtle bg-bg-card p-5">
+        <div className="animate-fade-in stagger-4 rounded-lg border border-border-subtle bg-bg-card p-5">
           <p className="text-xs text-text-muted">可用 / 锁定</p>
           {balance.isLoading ? (
-            <Skeleton className="mt-2 h-8 w-28" />
+            <Shimmer className="mt-2 h-8 w-28" />
           ) : balance.error ? (
             <p className="mt-1 font-mono text-2xl font-semibold text-loss">—</p>
           ) : (
@@ -104,7 +99,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-3 gap-6">
         {/* AI Discoveries — mock data, /analysis/ endpoints not yet built */}
-        <div className="col-span-3 rounded-lg border border-accent-gold/20 bg-bg-card p-6">
+        <div className="gradient-border-gold col-span-3 rounded-lg border border-accent-gold/20 bg-bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
               <span className="text-accent-gold">◆</span> AI 发现
@@ -161,17 +156,18 @@ export default function DashboardPage() {
         </div>
 
         {/* NBA Live */}
-        <div className="col-span-1 rounded-lg border border-border-subtle bg-bg-card p-6">
+        <div className="animate-fade-in stagger-1 col-span-1 rounded-lg border border-border-subtle bg-bg-card p-6">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-primary">
             🏀 NBA 实况
             <span className="rounded bg-accent-gold-bg px-1.5 py-0.5 text-[10px] text-accent-gold">
               PRO
             </span>
+            <span className="live-dot ml-1 h-1.5 w-1.5 rounded-full bg-profit" />
           </h2>
           {nbaGames.isLoading ? (
             <div className="space-y-4">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
+              <Shimmer className="h-16 w-full" />
+              <Shimmer className="h-16 w-full" />
             </div>
           ) : nbaGames.error ? (
             <p className="text-sm text-loss">Failed to load games</p>
@@ -202,18 +198,19 @@ export default function DashboardPage() {
         </div>
 
         {/* BTC Predictions */}
-        <div className="col-span-1 rounded-lg border border-border-subtle bg-bg-card p-6">
+        <div className="animate-fade-in stagger-2 col-span-1 rounded-lg border border-border-subtle bg-bg-card p-6">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-primary">
             ₿ BTC 预测
             <span className="rounded bg-accent-gold-bg px-1.5 py-0.5 text-[10px] text-accent-gold">
               PRO
             </span>
+            <span className="live-dot ml-1 h-1.5 w-1.5 rounded-full bg-profit" />
           </h2>
           {btcPredictions.isLoading ? (
             <>
-              <Skeleton className="mb-4 h-7 w-32" />
+              <Shimmer className="mb-4 h-7 w-32" />
               <div className="space-y-2">
-                {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-8 w-full" />)}
+                {[0, 1, 2, 3].map((i) => <Shimmer key={i} className="h-8 w-full" />)}
               </div>
             </>
           ) : btcPredictions.error ? (
@@ -251,13 +248,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Active Positions */}
-        <div className="col-span-1 rounded-lg border border-border-subtle bg-bg-card p-6">
+        <div className="animate-fade-in stagger-3 col-span-1 rounded-lg border border-border-subtle bg-bg-card p-6">
           <h2 className="mb-4 text-sm font-semibold text-text-primary">
             活跃仓位
           </h2>
           {positions.isLoading ? (
             <div className="space-y-2">
-              {[0, 1, 2].map((i) => <Skeleton key={i} className="h-8 w-full" />)}
+              {[0, 1, 2].map((i) => <Shimmer key={i} className="h-8 w-full" />)}
             </div>
           ) : positions.error ? (
             <p className="text-sm text-loss">Failed to load positions</p>

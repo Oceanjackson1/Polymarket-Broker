@@ -106,3 +106,192 @@ body {
 .terminal ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ═══ Premium Animation System ═══ */
+
+/* Price flash — green pulse on price increase */
+@keyframes flash-profit {
+  0% { background-color: rgba(16, 185, 129, 0.35); }
+  100% { background-color: transparent; }
+}
+
+/* Price flash — red pulse on price decrease */
+@keyframes flash-loss {
+  0% { background-color: rgba(239, 68, 68, 0.35); }
+  100% { background-color: transparent; }
+}
+
+.flash-up { animation: flash-profit 0.6s ease-out; }
+.flash-down { animation: flash-loss 0.6s ease-out; }
+
+/* Shimmer skeleton — sweeping light effect */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border-radius: 6px;
+}
+
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.04) 37%,
+    transparent 63%
+  );
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Conic gradient border — rotating prismatic edge */
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes rotate-border {
+  to { --border-angle: 360deg; }
+}
+
+.gradient-border {
+  position: relative;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    conic-gradient(from var(--border-angle), #3b82f6, #8b5cf6, #06b6d4, #f59e0b, #3b82f6) border-box;
+  animation: rotate-border 4s linear infinite;
+}
+
+.gradient-border-gold {
+  position: relative;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    conic-gradient(from var(--border-angle), #f59e0b, #d97706, #92400e, #f59e0b) border-box;
+  animation: rotate-border 6s linear infinite;
+}
+
+/* Hover glow — cursor-tracking radial light */
+.hover-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.hover-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    350px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(245, 158, 11, 0.06),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hover-glow:hover::before {
+  opacity: 1;
+}
+
+/* Button micro-interactions */
+.btn-premium {
+  transition: all 150ms ease;
+  transform: translateZ(0);
+}
+
+.btn-premium:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.2);
+}
+
+.btn-premium:active {
+  transform: scale(0.98);
+  transition-duration: 75ms;
+}
+
+/* Orderbook depth bar smooth transitions */
+.depth-bar {
+  transition: width 250ms ease-out;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.depth-bar-bid {
+  right: 0;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.depth-bar-ask {
+  left: 0;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Glassmorphism panel */
+.glass {
+  background: rgba(11, 15, 26, 0.7);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Fade-in utility */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+/* Stagger delay utilities */
+.stagger-1 { animation-delay: 0.06s; }
+.stagger-2 { animation-delay: 0.12s; }
+.stagger-3 { animation-delay: 0.18s; }
+.stagger-4 { animation-delay: 0.24s; }
+.stagger-5 { animation-delay: 0.30s; }
+.stagger-6 { animation-delay: 0.36s; }
+
+/* Pulse glow for live indicators */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+}
+
+.live-dot {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Number transition smoothing */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ambient background orbs */
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: float-orb 20s ease-in-out infinite;
+}

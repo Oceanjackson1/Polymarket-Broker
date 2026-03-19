@@ -50,7 +50,7 @@ export default function OrderEntry({ defaultPrice = 0.75 }: OrderEntryProps) {
           <button
             type="button"
             onClick={() => setSide("BUY")}
-            className={`rounded py-1.5 text-xs font-semibold transition-colors ${
+            className={`rounded py-1.5 text-xs font-semibold transition-all duration-200 ${
               isBuy
                 ? "bg-profit-bg text-profit"
                 : "text-text-muted hover:text-text-secondary"
@@ -61,7 +61,7 @@ export default function OrderEntry({ defaultPrice = 0.75 }: OrderEntryProps) {
           <button
             type="button"
             onClick={() => setSide("SELL")}
-            className={`rounded py-1.5 text-xs font-semibold transition-colors ${
+            className={`rounded py-1.5 text-xs font-semibold transition-all duration-200 ${
               !isBuy
                 ? "bg-loss-bg text-loss"
                 : "text-text-muted hover:text-text-secondary"
@@ -130,7 +130,7 @@ export default function OrderEntry({ defaultPrice = 0.75 }: OrderEntryProps) {
         <button
           type="submit"
           disabled={!isValid}
-          className={`w-full rounded py-2.5 text-sm font-semibold transition-colors ${
+          className={`btn-premium w-full rounded py-2.5 text-sm font-semibold transition-colors ${
             submitted
               ? "bg-profit text-white"
               : isValid

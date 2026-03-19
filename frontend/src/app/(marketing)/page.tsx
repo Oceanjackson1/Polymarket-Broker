@@ -85,10 +85,10 @@ export default function LandingPage() {
             <p className="mb-4 text-sm font-medium tracking-widest text-white/30">
               WHAT SETS US APART
             </p>
-            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Data that Polymarket
+            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
+              Data Polymarket
               <br />
-              <span className="text-white/40">doesn&apos;t offer.</span>
+              <span className="text-white/30">cannot provide</span>
             </h2>
           </div>
           <ExclusiveFeaturesGrid features={features} />
@@ -105,8 +105,8 @@ export default function LandingPage() {
             <p className="mb-4 text-sm font-medium tracking-widest text-white/30">
               HOW IT WORKS
             </p>
-            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Start in minutes.
+            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
+              Start in minutes
             </h2>
           </div>
           <div className="grid gap-6 md:grid-cols-4">
@@ -157,14 +157,14 @@ export default function LandingPage() {
               <p className="mb-4 text-sm font-medium tracking-widest text-white/30">
                 DEVELOPER EXPERIENCE
               </p>
-              <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
-                API-first
+              <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
+                API first
                 <br />
-                <span className="text-white/40">by design.</span>
+                <span className="text-white/30">by design</span>
               </h2>
-              <p className="mt-6 text-lg leading-relaxed text-white/40">
+              <p className="mt-6 text-[17px] leading-relaxed text-white/50">
                 Our own dashboard calls the same API you do.
-                Every endpoint, every feature — identical access.
+                Every endpoint, every feature, identical access
               </p>
               <ul className="mt-10 space-y-5">
                 {[
@@ -206,12 +206,12 @@ export default function LandingPage() {
               <pre className="p-6 text-[13px] leading-7">
                 <code>
                   <span className="text-blue-400">import</span> <span className="text-white">requests</span>{"\n\n"}
-                  <span className="text-white/25"># One call. Score + odds + bias signal.</span>{"\n"}
+                  <span className="text-white/25"># One call to get score, odds, bias signal</span>{"\n"}
                   <span className="text-white">r</span> = requests.<span className="text-blue-400">get</span>({"\n"}
                   {"  "}<span className="text-emerald-400">&quot;/api/v1/data/nba/games/gsw-lal/fusion&quot;</span>,{"\n"}
                   {"  "}headers={"{"}<span className="text-emerald-400">&quot;X-API-Key&quot;</span>: key{"}"}{"\n"}
                   ){"\n\n"}
-                  <span className="text-white/25"># Bias detected → trade</span>{"\n"}
+                  <span className="text-white/25"># Bias detected, execute trade</span>{"\n"}
                   <span className="text-blue-400">if</span> r.json()[<span className="text-emerald-400">&quot;magnitude_bps&quot;</span>] &gt; <span className="text-purple-400">300</span>:{"\n"}
                   {"  "}place_order(<span className="text-emerald-400">&quot;BUY&quot;</span>, size=<span className="text-purple-400">100</span>)
                 </code>
@@ -225,18 +225,18 @@ export default function LandingPage() {
       <section className="relative bg-black py-32">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="mx-auto max-w-2xl px-6 text-center">
-          <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
-            Ready to start?
+          <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
+            Ready to start
           </h2>
-          <p className="mt-6 text-lg text-white/40">
-            Free tier. No credit card. 500 API calls per day.
+          <p className="mt-6 text-[17px] text-white/50">
+            Free tier, no credit card, 500 API calls per day
           </p>
           <div className="mt-10 flex items-center justify-center gap-4">
             <Link
               href="/dashboard"
               className="rounded-full bg-white px-10 py-4 text-base font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
             >
-              Get started — free
+              Get started free
             </Link>
             <Link
               href="/pricing"

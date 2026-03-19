@@ -159,25 +159,27 @@ export function HeroSection() {
           </motion.p>
 
           <motion.h1
-            className="text-5xl font-semibold leading-[1.1] tracking-tight text-white md:text-7xl"
+            className="text-6xl font-semibold leading-[1.05] tracking-tighter text-white md:text-8xl lg:text-9xl"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
           >
-            Prediction markets,
+            Prediction
             <br />
-            <span className="text-white/30">reimagined.</span>
+            markets
+            <br />
+            <span className="text-white/25">reimagined</span>
           </motion.h1>
 
           <motion.p
-            className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-white/60"
+            className="mx-auto mt-10 max-w-lg text-[17px] leading-relaxed text-white/50"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.25 }}
           >
-            Exclusive data that Polymarket doesn&apos;t provide.
-            NBA live fusion. BTC multi-timeframe predictions.
-            AI pricing-bias analysis. One unified API.
+            Exclusive data Polymarket does not offer.{" "}
+            NBA live fusion, BTC multi-timeframe predictions,{" "}
+            AI pricing-bias analysis, one unified API
           </motion.p>
 
           <motion.div
@@ -190,7 +192,7 @@ export function HeroSection() {
               href="/dashboard"
               className="rounded-full bg-white px-8 py-3.5 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
             >
-              Get started — free
+              Get started free
             </Link>
             <Link
               href="/docs"
@@ -272,7 +274,7 @@ export function ExclusiveFeaturesGrid({ features }: { features: ExclusiveFeature
               {feature.description}
             </p>
             <p className="mt-6 text-sm text-white/25 transition-colors group-hover:text-white/50">
-              Learn more →
+              Learn more
             </p>
           </Link>
         </motion.div>

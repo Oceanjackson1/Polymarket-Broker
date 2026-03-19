@@ -1,0 +1,207 @@
+---
+title: Sports Data API
+description: 145-sport enhanced orderbook data with full historical records
+---
+
+# Sports Data API
+
+Base path: `/api/v1/data/sports`
+
+Scope required: `data:read`
+
+The Sports Data API provides enhanced orderbook and event data for 145 sport and esport categories. This includes full historical order books per event — data that is unavailable via Polymarket directly.
+
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/data/sports/categories` | List all supported sport categories |
+| `GET` | `/data/sports/\{sport\}/events` | Events for a specific sport |
+| `GET` | `/data/sports/\{sport\}/events/\{event_id\}/orderbook` | Historical orderbook for an event |
+| `GET` | `/data/sports/\{sport\}/events/\{event_id\}/realized` | Realized trade history |
+
+## Sport Identifier Format
+
+Sports are identified by URL-safe slug strings. The full list is returned by `/data/sports/categories`.
+
+**Examples:** `nba`, `nfl`, `epl`, `ufc`, `cs2`, `lol`, `nhl`, `mlb`, `atp`, `wta`
+
+---
+
+## GET /data/sports/categories
+
+List all supported sport categories with active event counts.
+
+**Response `200`:**
+
+```json
+{
+  "categories": [
+    {
+      "slug": "nba",
+      "name": "NBA Basketball",
+      "active_events": 12,
+      "total_volume_24h": 2340567.89
+    },
+    {
+      "slug": "nfl",
+      "name": "NFL American Football",
+      "active_events": 0,
+      "total_volume_24h": 0
+    },
+    {
+      "slug": "epl",
+      "name": "English Premier League",
+      "active_events": 5,
+      "total_volume_24h": 876543.21
+    },
+    {
+      "slug": "ufc",
+      "name": "UFC Mixed Martial Arts",
+      "active_events": 3,
+      "total_volume_24h": 456789.01
+    },
+    {
+      "slug": "cs2",
+      "name": "Counter-Strike 2",
+      "active_events": 8,
+      "total_volume_24h": 234567.89
+    }
+  ],
+  "total_categories": 145
+}
+```
+
+---
+
+## GET /data/sports/\{sport\}/events
+
+List events for a specific sport category.
+
+**Path parameters:**
+
+| Parameter | Description |
+|---|---|
+| `sport` | Sport slug (e.g., `nba`, `ufc`, `epl`) |
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `status` | string | `active` | `active`, `completed`, `all` |
+| `limit` | integer | 20 | Items per page (max 100) |
+| `cursor` | string | — | Pagination cursor |
+| `from` | ISO 8601 | — | Filter events starting after this date |
+| `to` | ISO 8601 | — | Filter events ending before this date |
+
+**Response `200`:**
+
+```json
+{
+  "sport": "nba",
+  "data": [
+    {
+      "event_id": "sports_nba_gsw_lal_20260319",
+      "title": "Golden State Warriors vs LA Lakers",
+      "market_id": "0xabc123...",
+      "home_team": "Golden State Warriors",
+      "away_team": "LA Lakers",
+      "game_time": "2026-03-19T20:30:00Z",
+      "status": "active",
+      "outcomes": [
+        {
+          "token_id": "217426331",
+          "label": "Golden State Warriors",
+          "current_price": 0.45
+        },
+        {
+          "token_id": "217426332",
+          "label": "LA Lakers",
+          "current_price": 0.55
+        }
+      ],
+      "volume_24h": 87654.32,
+      "data_updated_at": "2026-03-19T14:20:00Z"
+    }
+  ],
+  "pagination": { "cursor": "...", "has_more": false, "limit": 20 }
+}
+```
+
+---
+
+## GET /data/sports/\{sport\}/events/\{event_id\}/orderbook
+
+Get the full historical order book for a specific event. This endpoint is the key differentiator — Polymarket's own API only returns the current state, not the full time series.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `token_id` | string | — | Outcome token ID |
+| `from` | ISO 8601 | Event start | Start of history window |
+| `to` | ISO 8601 | Now | End of history window |
+| `interval` | string | `1m` | Snapshot interval: `1s`, `1m`, `5m`, `1h` |
+
+**Response `200`:**
+
+```json
+{
+  "event_id": "sports_nba_gsw_lal_20260319",
+  "token_id": "217426331",
+  "interval": "1m",
+  "stale": false,
+  "data_updated_at": "2026-03-19T14:20:00Z",
+  "snapshots": [
+    {
+      "timestamp": "2026-03-19T14:00:00Z",
+      "bids": [
+        { "price": 0.44, "size": 500.0 },
+        { "price": 0.43, "size": 1200.0 }
+      ],
+      "asks": [
+        { "price": 0.45, "size": 300.0 },
+        { "price": 0.46, "size": 800.0 }
+      ],
+      "mid": 0.445
+    },
+    {
+      "timestamp": "2026-03-19T14:01:00Z",
+      "bids": [...],
+      "asks": [...],
+      "mid": 0.448
+    }
+  ]
+}
+```
+
+<Callout type="info">
+  If the data collector hasn't pushed a fresh update within 5 minutes, the response will include `"stale": true`. The `data_updated_at` field always shows the last refresh time.
+</Callout>
+
+---
+
+## GET /data/sports/\{sport\}/events/\{event_id\}/realized
+
+Get realized trades (matched orders) for a specific event outcome.
+
+**Query parameters:** `token_id`, `from`, `to`, `limit`, `cursor`
+
+**Response `200`:**
+
+```json
+{
+  "event_id": "sports_nba_gsw_lal_20260319",
+  "token_id": "217426331",
+  "data": [
+    {
+      "trade_id": "trade_abc",
+      "price": 0.45,
+      "size": 150.0,
+      "side": "BUY",
+      "timestamp": "2026-03-19T14:15:22Z"
+    }
+  ],
+  "pagination": { "cursor": "...", "has_more": false, "limit": 50 }
+}
+```

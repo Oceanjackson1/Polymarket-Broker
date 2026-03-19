@@ -1,0 +1,209 @@
+---
+title: Convergence Arbitrage
+description: Systematically find and trade near-certain outcome markets for yield
+---
+
+# Convergence Arbitrage
+
+Convergence arbitrage is the practice of buying outcome tokens on Polymarket markets that are nearly certain to resolve, capturing the spread between current price (e.g., 0.96) and resolution value (1.0).
+
+The strategy is low-risk and yields 50–200 bps on successful positions. It is not risk-free: delayed resolution, dispute, or rare reversal of expected outcomes can hurt performance.
+
+## Why This Works
+
+Polymarket markets don't resolve the moment an outcome becomes certain — they resolve when an official source confirms the result and a transaction is submitted to Polygon. In the hours before resolution:
+
+1. Many market participants exit to redeploy capital, creating slight downward price pressure on the winning outcome.
+2. New participants may not notice the opportunity if it's a small or obscure market.
+3. The result is that a 99%-certain outcome may trade at 0.97, implying a 200bps yield with near-zero directional risk.
+
+## Using the Strategies API
+
+The easiest path is to use the built-in Strategies API:
+
+```python
+import httpx
+
+API_KEY = "pm_live_sk_xxxxxxxxxxxxxxxx"
+BASE_URL = "https://api.broker.polymarket.com/api/v1"
+headers = {"X-API-Key": API_KEY}
+
+# Get current opportunities
+opps = httpx.get(
+    f"{BASE_URL}/strategies/convergence/opportunities",
+    params={"min_prob": 0.95, "max_days": 3, "min_volume": 5000},
+    headers=headers
+).json()
+
+for opp in opps["opportunities"]:
+    print(
+        f"{opp['market_title'][:60]:<60} | "
+        f"p={opp['current_price']:.3f} | "
+        f"yield={opp['expected_yield_bps']:.0f}bps | "
+        f"days={opp['days_to_expiry']:.1f}"
+    )
+```
+
+**Sample output:**
+
+```
+Will Candidate X win the 2026 State Election?           | p=0.960 | yield=417bps | days=2.4
+Will Bitcoin close above $50,000 on March 20?           | p=0.970 | yield=309bps | days=1.4
+Will Team Y advance in the tournament?                  | p=0.985 | yield=152bps | days=0.8
+```
+
+## Evaluating Opportunities
+
+Not all convergence opportunities are equal. Evaluate each on:
+
+**Yield vs. days ratio:** A 417 bps yield in 2.4 days annualizes to ~62%. A 152 bps yield in 0.8 days annualizes to ~69%. The second is actually better capital efficiency.
+
+**Resolution source reliability:** Markets resolved via official election results or on-chain data carry lower dispute risk than markets resolved via news articles or subjective criteria.
+
+**Market category:**
+
+| Category | Notes |
+|---|---|
+| Politics | Official certification can be delayed; dispute risk is low but non-zero |
+| Crypto | On-chain verification is fast and certain; safest category |
+| Sports | Scores are objective; very low risk once the final whistle blows |
+| Technology | Subjective criteria risk (e.g., "Did X launch before Y?") |
+
+**Liquidity:** Check that you can actually fill at the displayed price:
+
+```python
+orderbook = httpx.get(
+    f"{BASE_URL}/markets/{opp['market_id']}/orderbook",
+    params={"token_id": opp["token_id"], "depth": 5},
+    headers=headers
+).json()
+
+best_ask = orderbook["asks"][0]["price"]
+ask_depth_top3 = sum(level["size"] for level in orderbook["asks"][:3])
+print(f"Best ask: {best_ask:.4f}, depth: ${ask_depth_top3:,.0f}")
+
+# If best_ask is significantly above current_price from opportunities endpoint,
+# the market moved — re-evaluate
+if best_ask > opp["current_price"] + 0.005:
+    print("Price slipped — opportunity may have closed")
+```
+
+## Execute via Strategies API
+
+```python
+# Execute a convergence trade
+order = httpx.post(
+    f"{BASE_URL}/strategies/convergence/execute",
+    headers={**headers, "Content-Type": "application/json"},
+    json={
+        "market_id": opp["market_id"],
+        "token_id": opp["token_id"],
+        "size": 2000.0   # $2,000 USDC
+    }
+).json()
+
+print(f"Executed: {order['strategy_execution_id']}")
+print(f"Expected net profit: ${order['expected_profit']['net_profit']:.2f}")
+```
+
+The Strategies API validates that the opportunity still meets criteria at execution time. If the market has moved (price dropped below 0.95 or expiry is now beyond 3 days), it will reject with an error.
+
+## Manual Execution
+
+You can also use the Orders API directly for more control:
+
+```python
+order = httpx.post(
+    f"{BASE_URL}/orders",
+    headers={**headers, "Content-Type": "application/json"},
+    json={
+        "market_id": "0xabc123...",
+        "token_id": "217426331",
+        "side": "BUY",
+        "type": "LIMIT",
+        "price": 0.962,   # Slightly above best ask for fill probability
+        "size": 2000.0
+    }
+).json()
+```
+
+## Monitor Active Positions
+
+```python
+positions = httpx.get(
+    f"{BASE_URL}/strategies/convergence/positions",
+    headers=headers
+).json()
+
+for pos in positions["positions"]:
+    days_left = pos["days_to_expiry"]
+    unrealized = pos["unrealized_pnl"]
+    print(f"{pos['market_title'][:50]:<50} | pnl=${unrealized:.2f} | {days_left:.1f}d left")
+```
+
+## Full Automation Loop
+
+```python
+import time
+
+SCAN_INTERVAL = 300        # Every 5 minutes
+MAX_POSITION_PER_MARKET = 3000.0
+MIN_YIELD_BPS = 300
+MAX_DAYS = 2
+
+def run_convergence_bot():
+    while True:
+        opps = httpx.get(
+            f"{BASE_URL}/strategies/convergence/opportunities",
+            params={
+                "min_prob": 0.96,
+                "max_days": MAX_DAYS,
+                "min_volume": 10000
+            },
+            headers=headers
+        ).json()
+
+        for opp in opps["opportunities"]:
+            if opp["expected_yield_bps"] < MIN_YIELD_BPS:
+                continue
+
+            # Check we don't already have a position in this market
+            existing = httpx.get(
+                f"{BASE_URL}/orders",
+                params={"market_id": opp["market_id"], "status": "OPEN"},
+                headers=headers
+            ).json()
+            if existing["data"]:
+                continue
+
+            size = min(MAX_POSITION_PER_MARKET, opp["max_position_usdc"])
+
+            result = httpx.post(
+                f"{BASE_URL}/strategies/convergence/execute",
+                headers={**headers, "Content-Type": "application/json"},
+                json={
+                    "market_id": opp["market_id"],
+                    "token_id": opp["token_id"],
+                    "size": size
+                }
+            )
+            if result.status_code == 201:
+                data = result.json()
+                print(f"[+] Opened: {opp['market_title'][:50]} | ${size:,.0f} | {opp['expected_yield_bps']:.0f}bps")
+            else:
+                print(f"[-] Failed: {result.json()}")
+
+        time.sleep(SCAN_INTERVAL)
+
+run_convergence_bot()
+```
+
+## Risk Controls
+
+The platform enforces these risk controls automatically:
+
+- **Maximum single-order size limit** (configurable per tier)
+- **Per-market position cap**
+- **Daily drawdown circuit breaker** — if daily losses exceed threshold, trading is suspended until you manually reset via `POST /api/v1/developer/risk/reset`
+
+Set appropriate position sizes and monitor the circuit breaker status via `GET /api/v1/developer/usage`.

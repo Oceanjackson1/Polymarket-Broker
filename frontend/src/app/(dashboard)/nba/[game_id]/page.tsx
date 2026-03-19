@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import { useNbaFusion } from "@/lib/hooks/use-nba";
+import { useNbaLive } from "@/lib/hooks/use-nba-live";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -30,6 +31,19 @@ function SignalBar({ magnitude }: { magnitude: number | null }) {
   );
 }
 
+function LiveBadge({ connected }: { connected: boolean }) {
+  return connected ? (
+    <span className="flex items-center gap-1 rounded bg-profit-bg px-2 py-0.5 text-[10px] font-semibold text-profit">
+      <span className="h-1.5 w-1.5 rounded-full bg-profit" />
+      LIVE
+    </span>
+  ) : (
+    <span className="rounded bg-accent-gold-bg px-2 py-0.5 text-[10px] font-semibold text-accent-gold">
+      LIVE
+    </span>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function NBAGamePage({
@@ -38,10 +52,13 @@ export default function NBAGamePage({
   params: Promise<{ game_id: string }>;
 }) {
   const { game_id: gameId } = use(params);
-  const { data, isLoading, error } = useNbaFusion(gameId);
+  const fusion = useNbaFusion(gameId);  // REST fallback — polled every 5s
+  const live = useNbaLive(gameId);      // WebSocket real-time push
   const [tradeSize, setTradeSize] = useState("100");
 
-  if (isLoading) {
+  const { data, isLoading, error } = fusion;
+
+  if (isLoading && !live.data) {
     return (
       <div className="flex min-h-full flex-col gap-0">
         <div className="border-b border-border-subtle bg-bg-card px-6 py-4">
@@ -59,7 +76,7 @@ export default function NBAGamePage({
     );
   }
 
-  if (error || !data) {
+  if ((error || !data) && !live.data) {
     return (
       <div className="flex min-h-full items-center justify-center p-6">
         <div className="rounded-lg border border-border-subtle bg-bg-card p-8 text-center">
@@ -72,10 +89,26 @@ export default function NBAGamePage({
     );
   }
 
-  const homeWinProb = parseFloat(String(data.polymarket.home_win_prob));
-  const awayWinProb = parseFloat(String(data.polymarket.away_win_prob));
-  const lastTrade = parseFloat(String(data.polymarket.last_trade_price));
-  const magnitudeBps = data.bias_signal.magnitude_bps;
+  // Prefer WebSocket data when available, fall back to REST
+  const score = live.data
+    ? {
+        home: live.data.score_home,
+        away: live.data.score_away,
+        quarter: live.data.quarter,
+        time_remaining: live.data.time_remaining,
+      }
+    : data?.score ?? { home: null, away: null, quarter: null, time_remaining: null };
+
+  const homeWinProb = live.data?.home_win_prob
+    ?? (data ? parseFloat(String(data.polymarket.home_win_prob)) : 0);
+  const awayWinProb = live.data?.away_win_prob
+    ?? (data ? parseFloat(String(data.polymarket.away_win_prob)) : 0);
+  const lastTrade = data ? parseFloat(String(data.polymarket.last_trade_price)) : 0;
+
+  const biasDirection = live.data?.bias_direction ?? data?.bias_signal.direction;
+  const magnitudeBps = live.data?.bias_magnitude_bps ?? data?.bias_signal.magnitude_bps;
+
+  const isStale = !live.isConnected && (data?.stale ?? false);
 
   // Derive team abbreviations from game_id (fallback: HOME/AWAY)
   const parts = gameId.split("-");
@@ -88,13 +121,13 @@ export default function NBAGamePage({
     { time: "Q2 12:00", homeOdds: 0.42, score: "28-35" },
     { time: "Q2 6:00", homeOdds: 0.38, score: "41-52" },
     { time: "Q3 12:00", homeOdds: 0.35, score: "58-67" },
-    { time: "Q4 4:22", homeOdds: homeWinProb, score: `${data.score.home}-${data.score.away}` },
+    { time: "Q4 4:22", homeOdds: homeWinProb, score: `${score.home}-${score.away}` },
   ];
 
   return (
     <div className="flex min-h-full flex-col gap-0">
       {/* ── Stale Warning Banner ─────────────────────────── */}
-      {data.stale && (
+      {isStale && (
         <div className="border-b border-loss/30 bg-loss/10 px-6 py-2">
           <p className="text-xs text-loss">
             ⚠ Data may be stale — live feed connection interrupted
@@ -107,29 +140,27 @@ export default function NBAGamePage({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-lg">🏀</span>
-            <span className="rounded bg-accent-gold-bg px-2 py-0.5 text-[10px] font-semibold text-accent-gold">
-              LIVE
-            </span>
+            <LiveBadge connected={live.isConnected} />
           </div>
           <div className="flex flex-1 items-center justify-center gap-8">
             <div className="text-right">
               <p className="text-sm text-text-secondary">{homeShort}</p>
               <p className="font-mono text-4xl font-bold text-text-primary">
-                {data.score.home}
+                {score.home}
               </p>
             </div>
             <div className="text-center">
               <p className="font-mono text-xs text-text-muted">
-                {data.score.quarter}
+                {score.quarter}
               </p>
               <p className="font-mono text-2xl font-semibold text-info-cyan">
-                {data.score.time_remaining}
+                {score.time_remaining}
               </p>
             </div>
             <div className="text-left">
               <p className="text-sm text-text-secondary">{awayShort}</p>
               <p className="font-mono text-4xl font-bold text-text-primary">
-                {data.score.away}
+                {score.away}
               </p>
             </div>
           </div>
@@ -192,7 +223,7 @@ export default function NBAGamePage({
             <div className="flex items-center justify-between">
               <span className="text-xs text-text-muted">Direction</span>
               <span className="rounded bg-profit-bg px-2 py-0.5 font-mono text-xs font-semibold text-profit">
-                {data.bias_signal.direction}
+                {biasDirection}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -205,16 +236,16 @@ export default function NBAGamePage({
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-xs text-text-muted">Signal Strength</span>
               </div>
-              <SignalBar magnitude={magnitudeBps} />
+              <SignalBar magnitude={magnitudeBps ?? null} />
             </div>
             <div className="rounded border border-accent-gold/20 bg-accent-gold-bg/20 p-3">
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-accent-gold">
                 AI Recommendation
               </p>
               <p className="font-mono text-sm text-text-primary">
-                {data.bias_signal.direction === "HOME_UNDERPRICED"
+                {biasDirection === "HOME_UNDERPRICED"
                   ? `Buy ${homeShort} @ ${homeWinProb.toFixed(2)}`
-                  : data.bias_signal.direction === "AWAY_UNDERPRICED"
+                  : biasDirection === "AWAY_UNDERPRICED"
                   ? `Buy ${awayShort} @ ${awayWinProb.toFixed(2)}`
                   : "No clear trade signal"}
               </p>

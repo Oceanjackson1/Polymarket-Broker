@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useBtcPredictions } from "@/lib/hooks/use-btc";
+import { useBtcLive } from "@/lib/hooks/use-btc-live";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -24,7 +25,7 @@ interface TimeframeCardData {
   price_usd: string;
   prediction_prob: string | null;
   volume: string | null;
-  recorded_at: string;
+  recorded_at: string | null;
 }
 
 function TimeframeCard({ tf }: { tf: TimeframeCardData }) {
@@ -69,7 +70,12 @@ function TimeframeCard({ tf }: { tf: TimeframeCardData }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function BTCPage() {
-  const { data: predictions, isLoading, error } = useBtcPredictions();
+  const { data: restPredictions, isLoading, error } = useBtcPredictions();  // REST fallback
+  const { data: livePredictions, isConnected } = useBtcLive();              // WebSocket real-time
+
+  // Prefer WebSocket data when available, fall back to REST
+  const predictions = livePredictions.length > 0 ? livePredictions : restPredictions;
+
   const [activeTimeframe, setActiveTimeframe] = useState("1h");
 
   // Derive BTC price from the first snapshot
@@ -104,30 +110,44 @@ export default function BTCPage() {
             PRO
           </span>
         </div>
-        <div className="text-right">
-          {isLoading ? (
-            <Skeleton className="h-8 w-28" />
-          ) : btcPrice != null ? (
-            <>
-              <p className="font-mono text-2xl font-bold text-text-primary">
-                ${btcPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </p>
-              <p className="font-mono text-sm text-text-muted">Live</p>
-            </>
+        <div className="flex items-center gap-3">
+          {/* WebSocket connection indicator */}
+          {isConnected ? (
+            <span className="flex items-center gap-1.5 rounded bg-profit-bg px-2 py-0.5 text-[10px] font-semibold text-profit">
+              <span className="h-1.5 w-1.5 rounded-full bg-profit" />
+              WS LIVE
+            </span>
           ) : (
-            <p className="font-mono text-2xl font-bold text-text-primary">—</p>
+            <span className="flex items-center gap-1.5 rounded bg-bg-elevated px-2 py-0.5 text-[10px] text-text-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-text-muted" />
+              polling
+            </span>
           )}
+          <div className="text-right">
+            {isLoading && livePredictions.length === 0 ? (
+              <Skeleton className="h-8 w-28" />
+            ) : btcPrice != null ? (
+              <>
+                <p className="font-mono text-2xl font-bold text-text-primary">
+                  ${btcPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </p>
+                <p className="font-mono text-sm text-text-muted">Live</p>
+              </>
+            ) : (
+              <p className="font-mono text-2xl font-bold text-text-primary">—</p>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ── 4 Timeframe Cards ─────────────────────────────── */}
-      {isLoading ? (
+      {isLoading && livePredictions.length === 0 ? (
         <div className="mb-6 grid grid-cols-4 gap-4">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-44 w-full rounded-lg" />
           ))}
         </div>
-      ) : error ? (
+      ) : error && livePredictions.length === 0 ? (
         <div className="mb-6 rounded-lg border border-border-subtle bg-bg-card p-6">
           <p className="text-sm text-loss">Failed to load BTC predictions</p>
         </div>
@@ -252,8 +272,8 @@ export default function BTCPage() {
             Prediction Snapshots
           </p>
           <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-profit" />
-            <span className="text-[10px] text-text-muted">Live</span>
+            <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-profit" : "bg-text-muted"}`} />
+            <span className="text-[10px] text-text-muted">{isConnected ? "Live" : "Polling"}</span>
           </span>
         </div>
         <div className="overflow-x-auto">
@@ -281,13 +301,13 @@ export default function BTCPage() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
+              {isLoading && livePredictions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center">
                     <Skeleton className="mx-auto h-4 w-48" />
                   </td>
                 </tr>
-              ) : error ? (
+              ) : error && livePredictions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-sm text-loss">
                     Failed to load data
@@ -304,10 +324,10 @@ export default function BTCPage() {
                   const prob = parseFloat(snap.prediction_prob ?? "0.5");
                   const isUp = prob > 0.5;
                   const price = parseFloat(snap.price_usd);
-                  const recordedAt = new Date(snap.recorded_at);
-                  const timeStr = isNaN(recordedAt.getTime())
-                    ? snap.recorded_at
-                    : recordedAt.toLocaleTimeString();
+                  const recordedAt = snap.recorded_at ? new Date(snap.recorded_at) : null;
+                  const timeStr = recordedAt && !isNaN(recordedAt.getTime())
+                    ? recordedAt.toLocaleTimeString()
+                    : (snap.recorded_at ?? "—");
                   return (
                     <tr
                       key={snap.timeframe}

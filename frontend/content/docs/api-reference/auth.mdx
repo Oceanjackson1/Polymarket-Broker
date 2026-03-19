@@ -1,0 +1,224 @@
+---
+title: Auth API
+description: User registration, login, API key management, and wallet authentication endpoints
+---
+
+# Auth API
+
+Base path: `/api/v1/auth`
+
+The Auth API handles user registration, session management, API key lifecycle, and wallet-based non-custodial authentication.
+
+## Endpoints
+
+| Method | Path | Description | Scope Required |
+|---|---|---|---|
+| `POST` | `/auth/register` | Register with email + password | — |
+| `POST` | `/auth/login` | Email + password → JWT | — |
+| `POST` | `/auth/wallet/challenge` | Get nonce for wallet signing | — |
+| `POST` | `/auth/wallet/verify` | Verify wallet signature → JWT | — |
+| `POST` | `/auth/wallet/refresh` | Refresh access token | — |
+| `GET` | `/auth/keys` | List all API keys | JWT required |
+| `POST` | `/auth/keys` | Create new API key | JWT required |
+| `DELETE` | `/auth/keys/\{key_id\}` | Revoke API key | JWT required |
+
+---
+
+## POST /auth/register
+
+Register a new account.
+
+**Request body:**
+
+```json
+{
+  "email": "you@example.com",
+  "password": "min-8-chars-password"
+}
+```
+
+**Response `201`:**
+
+```json
+{
+  "user_id": "usr_abc123",
+  "email": "you@example.com",
+  "tier": "free",
+  "created_at": "2026-03-19T10:00:00Z"
+}
+```
+
+**Error codes:**
+
+| Code | Status | Description |
+|---|---|---|
+| `EMAIL_ALREADY_EXISTS` | 409 | Email is already registered |
+| `INVALID_PASSWORD` | 400 | Password does not meet requirements |
+
+---
+
+## POST /auth/login
+
+Authenticate with email and password.
+
+**Request body:**
+
+```json
+{
+  "email": "you@example.com",
+  "password": "your-password"
+}
+```
+
+**Response `200`:**
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "rt_opaque_30day_token",
+  "expires_in": 900,
+  "user_id": "usr_abc123",
+  "tier": "free"
+}
+```
+
+---
+
+## POST /auth/wallet/challenge
+
+Get a one-time nonce to sign with your Ethereum wallet.
+
+**Request body:** `{}` (empty)
+
+**Response `200`:**
+
+```json
+{
+  "nonce": "0x7f3a4e2d...",
+  "expires_at": "2026-03-19T10:15:00Z"
+}
+```
+
+The nonce expires after 15 minutes.
+
+---
+
+## POST /auth/wallet/verify
+
+Submit a signed nonce to receive JWT tokens.
+
+**Request body:**
+
+```json
+{
+  "address": "0xYourEthereumAddress",
+  "signature": "0xSignedNonce..."
+}
+```
+
+**Response `200`:**
+
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "rt_opaque_30day_token",
+  "expires_in": 900
+}
+```
+
+The `access_token` is a JWT with a 15-minute TTL. Use `Authorization: Bearer <token>` in subsequent requests.
+
+---
+
+## POST /auth/wallet/refresh
+
+Exchange a refresh token for a new access token.
+
+**Request body:**
+
+```json
+{
+  "refresh_token": "rt_opaque_30day_token"
+}
+```
+
+**Response `200`:**
+
+```json
+{
+  "access_token": "eyJ...",
+  "expires_in": 900
+}
+```
+
+---
+
+## GET /auth/keys
+
+List all API keys for the authenticated account.
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response `200`:**
+
+```json
+{
+  "keys": [
+    {
+      "key_id": "key_xyz789",
+      "name": "Production bot",
+      "prefix": "pm_live_sk_xxxx",
+      "scopes": ["markets:read", "orders:write", "portfolio:read"],
+      "created_at": "2026-03-19T10:00:00Z",
+      "last_used_at": "2026-03-19T14:30:00Z"
+    }
+  ]
+}
+```
+
+Note: The full API key value is not returned in list responses (only the prefix for identification).
+
+---
+
+## POST /auth/keys
+
+Create a new API key.
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request body:**
+
+```json
+{
+  "name": "My trading bot",
+  "scopes": ["markets:read", "orders:write", "portfolio:read", "data:read"]
+}
+```
+
+**Response `201`:**
+
+```json
+{
+  "key_id": "key_xyz789",
+  "name": "My trading bot",
+  "api_key": "pm_live_sk_xxxxxxxxxxxxxxxx",
+  "scopes": ["markets:read", "orders:write", "portfolio:read", "data:read"],
+  "created_at": "2026-03-19T10:00:00Z"
+}
+```
+
+<Callout type="warn">
+  The full `api_key` value is only returned once at creation time. Store it securely.
+</Callout>
+
+---
+
+## DELETE /auth/keys/\{key_id\}
+
+Revoke an API key immediately.
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response `204`:** No content.
+
+Revocation is immediate. Any in-flight requests using the revoked key will fail with `401`.

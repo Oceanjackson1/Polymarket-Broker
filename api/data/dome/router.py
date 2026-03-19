@@ -2,7 +2,7 @@
 """API routes for Dome-sourced data: market snapshots, cross-platform spreads, wallets."""
 
 from datetime import datetime, UTC
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func, and_
 
@@ -307,11 +307,41 @@ async def get_wallet_pnl(
 @router.get("/crypto/{symbol}/price")
 async def get_crypto_price(
     symbol: str,
+    request: Request,
+    source: str = Query(default="binance", regex="^(binance|chainlink)$"),
     auth: dict = Depends(get_current_user_from_api_key),
 ):
-    """Real-time crypto price from Dome (Binance). Requires DomeClient on app.state."""
+    """Real-time crypto price from Dome (Binance or Chainlink)."""
     require_scope(auth, "data:read")
-    from fastapi import Request
-    # DomeClient is attached to app.state during lifespan.
-    # This is a lightweight proxy; no DB needed.
-    raise HTTPException(501, detail="DOME_CLIENT_NOT_AVAILABLE_VIA_PROXY_YET")
+    dome = getattr(request.app.state, "dome_client", None)
+    if not dome:
+        raise HTTPException(503, detail="DOME_CLIENT_NOT_CONFIGURED")
+
+    # Map common symbols to API-specific formats.
+    currency_map = {
+        "binance": {"btc": "btcusdt", "eth": "ethusdt", "sol": "solusdt", "matic": "maticusdt"},
+        "chainlink": {"btc": "btc/usd", "eth": "eth/usd", "sol": "sol/usd", "matic": "matic/usd"},
+    }
+    mapped = currency_map.get(source, {}).get(symbol.lower(), symbol.lower())
+
+    try:
+        if source == "chainlink":
+            resp = await dome.get_chainlink_price(mapped, limit=1)
+        else:
+            resp = await dome.get_binance_price(mapped, limit=1)
+
+        from core.dome.client import extract_list
+        prices = extract_list(resp)
+        if not prices:
+            raise HTTPException(404, detail="NO_PRICE_DATA")
+        latest = prices[0]
+        return {
+            "symbol": symbol.upper(),
+            "source": source,
+            "price": latest.get("value") or latest.get("price"),
+            "timestamp": latest.get("timestamp"),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(502, detail=f"Dome API error: {e}")

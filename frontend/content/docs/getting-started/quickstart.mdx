@@ -1,0 +1,135 @@
+---
+title: Quickstart
+description: Make your first Polymarket Broker API call in under 5 minutes
+---
+
+# Quickstart
+
+This guide gets you from zero to a working API call in under 5 minutes.
+
+## Step 1: Create an account
+
+Register at [broker.polymarket.com/register](https://broker.polymarket.com/register) with your email and password.
+
+```bash
+curl -X POST https://api.broker.polymarket.com/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "you@example.com",
+    "password": "your-secure-password"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "user_id": "usr_abc123",
+  "email": "you@example.com",
+  "tier": "free",
+  "created_at": "2026-03-19T10:00:00Z"
+}
+```
+
+## Step 2: Create an API key
+
+```bash
+curl -X POST https://api.broker.polymarket.com/api/v1/auth/keys \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -d '{
+    "name": "My first key",
+    "scopes": ["markets:read", "data:read", "orders:write", "portfolio:read"]
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "key_id": "key_xyz789",
+  "name": "My first key",
+  "api_key": "pm_live_sk_xxxxxxxxxxxxxxxx",
+  "scopes": ["markets:read", "data:read", "orders:write", "portfolio:read"],
+  "created_at": "2026-03-19T10:01:00Z"
+}
+```
+
+<Callout type="warn">
+  Copy your API key now. For security, the full key value is only shown once.
+</Callout>
+
+## Step 3: Fetch markets
+
+```bash
+curl https://api.broker.polymarket.com/api/v1/markets?category=sports&status=active&limit=5 \
+  -H "X-API-Key: pm_live_sk_xxxxxxxxxxxxxxxx"
+```
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "market_id": "0xabc...",
+      "title": "Golden State Warriors to win the NBA Championship?",
+      "category": "sports",
+      "status": "active",
+      "volume_24h": 45320.50,
+      "outcomes": [
+        { "id": "217426331", "label": "Yes", "price": 0.12 },
+        { "id": "217426332", "label": "No", "price": 0.88 }
+      ]
+    }
+  ],
+  "pagination": {
+    "cursor": "next_cursor_token",
+    "has_more": true,
+    "limit": 5
+  }
+}
+```
+
+## Step 4: Place your first order
+
+```bash
+curl -X POST https://api.broker.polymarket.com/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: pm_live_sk_xxxxxxxxxxxxxxxx" \
+  -d '{
+    "market_id": "0xabc...",
+    "token_id": "217426331",
+    "side": "BUY",
+    "type": "LIMIT",
+    "price": 0.12,
+    "size": 50.00
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "order_id": "ord_abc123",
+  "market_id": "0xabc...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "type": "LIMIT",
+  "price": 0.12,
+  "size": 50.0,
+  "size_filled": 0.0,
+  "size_remaining": 50.0,
+  "status": "OPEN",
+  "broker_fee_bps": 10,
+  "created_at": "2026-03-19T10:05:00Z"
+}
+```
+
+## Next steps
+
+<Cards>
+  <Card title="Authentication" href="/docs/getting-started/authentication" description="Learn about wallet-based non-custodial auth and API key scopes." />
+  <Card title="Rate Limits" href="/docs/getting-started/rate-limits" description="Understand quotas and how to handle 429 responses." />
+  <Card title="NBA Fusion Data" href="/docs/api-reference/data-nba" description="Access live NBA × Polymarket fusion signals." />
+</Cards>

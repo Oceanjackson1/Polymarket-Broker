@@ -1,0 +1,265 @@
+---
+title: BTC Data API
+description: Multi-timeframe BTC prediction markets with on-chain Polygon trade data
+---
+
+# BTC Data API
+
+Base path: `/api/v1/data/btc`
+
+Scope required: `data:read`
+
+The BTC Data API provides access to multi-timeframe BTC prediction markets, on-chain Polygon trade data at millisecond precision, and historical backfill data. Sources include the BTC UpDown MultiTimeframe Trade Scraper, Dome API, and direct Polygon chain indexing.
+
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/data/btc/predictions` | List all BTC prediction markets |
+| `GET` | `/data/btc/predictions/\{timeframe\}` | Prediction data for a specific timeframe |
+| `GET` | `/data/btc/onchain` | On-chain Polygon trade data |
+| `GET` | `/data/btc/history` | Historical backfill via Gamma API |
+
+<Callout type="info">
+  `/data/btc/onchain` is a top-level route (not nested under `/predictions/\{timeframe\}`) to avoid router collision with the `\{timeframe\}` path parameter.
+</Callout>
+
+---
+
+## GET /data/btc/predictions
+
+List all active BTC prediction markets grouped by timeframe.
+
+**Response `200`:**
+
+```json
+{
+  "markets": [
+    {
+      "timeframe": "5m",
+      "market_id": "0xbtc5m...",
+      "title": "Will BTC be higher in 5 minutes?",
+      "description": "Resolves YES if BTC price in 5 minutes is higher than current price.",
+      "current_price_yes": 0.52,
+      "current_price_no": 0.48,
+      "volume_24h": 123456.78,
+      "next_resolution": "2026-03-19T14:25:00Z",
+      "status": "active"
+    },
+    {
+      "timeframe": "15m",
+      "market_id": "0xbtc15m...",
+      "title": "Will BTC be higher in 15 minutes?",
+      "current_price_yes": 0.55,
+      "current_price_no": 0.45,
+      "volume_24h": 234567.89,
+      "next_resolution": "2026-03-19T14:35:00Z",
+      "status": "active"
+    },
+    {
+      "timeframe": "1h",
+      "market_id": "0xbtc1h...",
+      "title": "Will BTC be higher in 1 hour?",
+      "current_price_yes": 0.58,
+      "current_price_no": 0.42,
+      "volume_24h": 456789.01,
+      "next_resolution": "2026-03-19T15:22:05Z",
+      "status": "active"
+    },
+    {
+      "timeframe": "4h",
+      "market_id": "0xbtc4h...",
+      "title": "Will BTC be higher in 4 hours?",
+      "current_price_yes": 0.61,
+      "current_price_no": 0.39,
+      "volume_24h": 567890.12,
+      "next_resolution": "2026-03-19T18:22:05Z",
+      "status": "active"
+    }
+  ],
+  "btc_spot_price": 68423.50,
+  "btc_spot_updated_at": "2026-03-19T14:22:00Z",
+  "stale": false,
+  "data_updated_at": "2026-03-19T14:22:05Z"
+}
+```
+
+---
+
+## GET /data/btc/predictions/\{timeframe\}
+
+Get detailed prediction data for a specific timeframe.
+
+**Path parameters:**
+
+| Parameter | Values | Description |
+|---|---|---|
+| `timeframe` | `5m`, `15m`, `1h`, `4h` | Prediction horizon |
+
+**Response `200`:**
+
+```json
+{
+  "timeframe": "5m",
+  "market_id": "0xbtc5m...",
+  "btc_spot_price": 68423.50,
+  "btc_spot_updated_at": "2026-03-19T14:22:00Z",
+  "market": {
+    "yes": {
+      "token_id": "btc5m_yes",
+      "price": 0.52,
+      "volume_24h": 67890.12,
+      "bids": [
+        { "price": 0.51, "size": 5000.0 },
+        { "price": 0.50, "size": 12000.0 }
+      ],
+      "asks": [
+        { "price": 0.52, "size": 3000.0 },
+        { "price": 0.53, "size": 8000.0 }
+      ]
+    },
+    "no": {
+      "token_id": "btc5m_no",
+      "price": 0.48,
+      "volume_24h": 55566.66,
+      "bids": [...],
+      "asks": [...]
+    }
+  },
+  "resolution_window": {
+    "opens_at": "2026-03-19T14:22:05Z",
+    "resolves_at": "2026-03-19T14:27:05Z",
+    "reference_price": 68423.50
+  },
+  "recent_resolutions": [
+    {
+      "resolved_at": "2026-03-19T14:17:00Z",
+      "outcome": "YES",
+      "entry_price": 68100.00,
+      "exit_price": 68423.50,
+      "change_pct": 0.47
+    },
+    {
+      "resolved_at": "2026-03-19T14:12:00Z",
+      "outcome": "NO",
+      "entry_price": 68200.00,
+      "exit_price": 68100.00,
+      "change_pct": -0.15
+    }
+  ],
+  "stale": false,
+  "data_updated_at": "2026-03-19T14:22:05Z"
+}
+```
+
+---
+
+## GET /data/btc/onchain
+
+On-chain Polygon trade data for BTC prediction markets at millisecond precision. Sourced directly from Polygon chain indexing.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `timeframe` | string | `all` | Filter by market timeframe: `5m`, `15m`, `1h`, `4h`, `all` |
+| `from` | ISO 8601 | 1 hour ago | Start time |
+| `to` | ISO 8601 | Now | End time |
+| `limit` | integer | 100 | Items per page (max 500) |
+| `cursor` | string | — | Pagination cursor |
+| `min_size` | float | — | Minimum trade size in USDC |
+
+**Response `200`:**
+
+```json
+{
+  "data": [
+    {
+      "tx_hash": "0xtxhash...",
+      "block_number": 67234891,
+      "timestamp_ms": 1742394725432,
+      "timestamp": "2026-03-19T14:22:05.432Z",
+      "market_id": "0xbtc5m...",
+      "timeframe": "5m",
+      "token_id": "btc5m_yes",
+      "outcome": "YES",
+      "side": "BUY",
+      "price": 0.52,
+      "size": 500.0,
+      "maker": "0xMakerAddress...",
+      "taker": "0xTakerAddress...",
+      "fee_amount": 0.26
+    },
+    {
+      "tx_hash": "0xtxhash2...",
+      "block_number": 67234890,
+      "timestamp_ms": 1742394724891,
+      "timestamp": "2026-03-19T14:22:04.891Z",
+      "market_id": "0xbtc15m...",
+      "timeframe": "15m",
+      "token_id": "btc15m_yes",
+      "outcome": "YES",
+      "side": "BUY",
+      "price": 0.55,
+      "size": 1200.0,
+      "maker": "0xMakerAddress...",
+      "taker": "0xTakerAddress...",
+      "fee_amount": 0.33
+    }
+  ],
+  "pagination": {
+    "cursor": "...",
+    "has_more": true,
+    "limit": 100
+  },
+  "data_updated_at": "2026-03-19T14:22:05Z"
+}
+```
+
+The millisecond-precision `timestamp_ms` field is useful for detecting front-running patterns and high-frequency order flow analysis.
+
+---
+
+## GET /data/btc/history
+
+Historical backfill data via the Polymarket Gamma API. Returns resolved BTC prediction market history.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `timeframe` | string | `all` | `5m`, `15m`, `1h`, `4h`, `all` |
+| `from` | ISO 8601 | 30 days ago | Start date |
+| `to` | ISO 8601 | Now | End date |
+| `limit` | integer | 100 | Items per page (max 500) |
+| `cursor` | string | — | Pagination cursor |
+
+**Response `200`:**
+
+```json
+{
+  "data": [
+    {
+      "market_id": "0xbtc5m_historical...",
+      "timeframe": "5m",
+      "opened_at": "2026-03-18T10:00:00Z",
+      "resolved_at": "2026-03-18T10:05:00Z",
+      "outcome": "YES",
+      "entry_btc_price": 67800.00,
+      "exit_btc_price": 67950.00,
+      "change_pct": 0.22,
+      "yes_resolution_price": 1.0,
+      "no_resolution_price": 0.0,
+      "volume": 34567.89
+    }
+  ],
+  "pagination": { "cursor": "...", "has_more": true, "limit": 100 },
+  "summary": {
+    "total_resolved": 8640,
+    "yes_count": 4385,
+    "no_count": 4255,
+    "yes_rate": 0.507,
+    "period": { "from": "2026-02-17T00:00:00Z", "to": "2026-03-19T14:22:05Z" }
+  }
+}
+```

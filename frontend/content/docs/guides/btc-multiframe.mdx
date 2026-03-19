@@ -1,0 +1,162 @@
+---
+title: BTC Multi-Timeframe Trading
+description: Using BTC prediction market data across 5m, 15m, 1h, and 4h timeframes to identify edge
+---
+
+# BTC Multi-Timeframe Trading
+
+BTC prediction markets on Polymarket let you trade directional price movement over fixed windows: 5 minutes, 15 minutes, 1 hour, and 4 hours. This guide covers how to use the BTC Data API to analyze cross-timeframe signals and on-chain data to find edge.
+
+## Understanding BTC Prediction Markets
+
+Each market resolves YES if BTC's spot price is higher at the end of the window than at the start. Resolution uses a reference price established when the market opens.
+
+Key characteristics:
+- **Continuous rotation:** New markets open as old ones resolve. There are typically 4 active markets at any time (one per timeframe).
+- **On-chain settlement:** All fills and resolutions happen on Polygon. The `/data/btc/onchain` endpoint gives you millisecond-precision fill data.
+- **Implied drift:** The YES price across timeframes represents the market's implied probability that BTC will be higher at each horizon. Comparing these probabilities gives you an implied "term structure" of BTC directional sentiment.
+
+## Strategy 1: Term Structure Divergence
+
+When the 5m and 15m YES prices diverge significantly from the 1h and 4h prices, it may indicate short-term volatility or momentum that isn't reflected in longer-horizon expectations.
+
+```python
+import httpx
+
+API_KEY = "pm_live_sk_xxxxxxxxxxxxxxxx"
+BASE_URL = "https://api.broker.polymarket.com/api/v1"
+headers = {"X-API-Key": API_KEY}
+
+predictions = httpx.get(f"{BASE_URL}/data/btc/predictions", headers=headers).json()
+
+# Extract YES prices by timeframe
+yes_prices = {}
+for market in predictions["markets"]:
+    yes_prices[market["timeframe"]] = market["current_price_yes"]
+
+print("BTC YES prices by timeframe:")
+for tf, price in sorted(yes_prices.items()):
+    print(f"  {tf:>4}: {price:.3f}")
+
+# Term structure: compare 5m vs 4h
+short = yes_prices.get("5m", 0.5)
+long = yes_prices.get("4h", 0.5)
+spread_bps = abs(short - long) * 10000
+
+if spread_bps > 1000:
+    if short > long:
+        print(f"Short-term bullish vs long-term bearish: {spread_bps:.0f} bps divergence")
+        print("Consider: BUY 5m YES (momentum) or SELL 4h YES (mean reversion)")
+    else:
+        print(f"Short-term bearish vs long-term bullish: {spread_bps:.0f} bps divergence")
+        print("Consider: BUY 5m NO (momentum) or SELL 4h NO (mean reversion)")
+```
+
+## Strategy 2: On-Chain Order Flow Analysis
+
+The `/data/btc/onchain` endpoint provides every on-chain fill at millisecond precision. Large institutional buys on YES tend to be predictive of subsequent price movement.
+
+```python
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+
+# Get the last 5 minutes of on-chain data
+five_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+
+onchain = httpx.get(
+    f"{BASE_URL}/data/btc/onchain",
+    params={"from": five_min_ago, "limit": 500},
+    headers=headers
+).json()
+
+# Aggregate buy/sell volume by timeframe and outcome
+flow = defaultdict(lambda: {"yes_buy": 0, "yes_sell": 0, "no_buy": 0, "no_sell": 0})
+
+for trade in onchain["data"]:
+    tf = trade["timeframe"]
+    outcome = trade["outcome"]
+    side = trade["side"]
+    size = trade["size"]
+
+    key = f"{outcome.lower()}_{side.lower()}"
+    flow[tf][key] += size
+
+print("Order flow (5-min window):")
+for tf in ["5m", "15m", "1h", "4h"]:
+    if tf not in flow:
+        continue
+    f = flow[tf]
+    yes_net = f["yes_buy"] - f["yes_sell"]
+    no_net = f["no_buy"] - f["no_sell"]
+    print(f"  {tf}: YES net=${yes_net:+,.0f}, NO net=${no_net:+,.0f}")
+```
+
+When YES net flow is strongly positive (large buyers on YES) and the YES price is below 0.55, the crowd is positioning for upward movement — potentially early.
+
+## Strategy 3: Resolution History Analysis
+
+Use the `/data/btc/history` endpoint to compute the empirical YES rate for each timeframe. If the market is consistently mispricing the base rate, there's a persistent edge.
+
+```python
+from collections import Counter
+
+history = httpx.get(
+    f"{BASE_URL}/data/btc/history",
+    params={"timeframe": "5m", "limit": 500},
+    headers=headers
+).json()
+
+outcomes = Counter(item["outcome"] for item in history["data"])
+yes_rate = outcomes["YES"] / (outcomes["YES"] + outcomes["NO"])
+
+print(f"Empirical YES rate (last {len(history['data'])} 5m markets): {yes_rate:.3f}")
+
+# Get current 5m YES price
+pred_5m = httpx.get(f"{BASE_URL}/data/btc/predictions/5m", headers=headers).json()
+current_yes_price = pred_5m["market"]["yes"]["price"]
+
+drift_bps = (yes_rate - current_yes_price) * 10000
+print(f"Current YES price: {current_yes_price:.3f}")
+print(f"Implied edge: {drift_bps:+.0f} bps")
+
+if drift_bps > 300:
+    print("Historical YES rate above current market → consider BUY YES")
+elif drift_bps < -300:
+    print("Historical NO rate above current market → consider BUY NO")
+```
+
+## Reading On-Chain Data
+
+The `timestamp_ms` field gives millisecond precision:
+
+```python
+# Detect large trades (>$5,000) in the last minute
+one_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+recent = httpx.get(
+    f"{BASE_URL}/data/btc/onchain",
+    params={"from": one_min_ago, "min_size": 5000, "limit": 100},
+    headers=headers
+).json()
+
+for trade in recent["data"]:
+    ts_ms = trade["timestamp_ms"]
+    age_ms = int(datetime.now(timezone.utc).timestamp() * 1000) - ts_ms
+    print(
+        f"  {trade['timeframe']:>4} | {trade['outcome']} {trade['side']:>4} | "
+        f"${trade['size']:>8,.0f} @ {trade['price']:.3f} | {age_ms}ms ago"
+    )
+```
+
+## Execution Tips
+
+**Limit orders only.** BTC prediction markets can have wide spreads during high volatility. Always use `type: LIMIT` to control your entry price. Market orders will cross the spread.
+
+**Size relative to volume.** The 5m market has the lowest volume (~$120k/day in example data). Don't size a position larger than 1% of 24h volume to avoid significant market impact.
+
+**Monitor stale data.** The BTC collector updates every 30 seconds. Check `"stale": true` before trading.
+
+```python
+data = httpx.get(f"{BASE_URL}/data/btc/predictions/5m", headers=headers).json()
+if data.get("stale"):
+    print("Stale — skip this cycle")
+```

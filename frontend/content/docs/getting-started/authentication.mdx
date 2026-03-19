@@ -1,0 +1,229 @@
+---
+title: Authentication
+description: API key and wallet-based authentication for the Polymarket Broker API
+---
+
+# Authentication
+
+The Broker API supports two authentication modes. Choose based on whether you want the Broker to sign orders on your behalf (hosted mode) or sign orders locally with your own wallet (non-custodial mode).
+
+## Mode A: API Key (Hosted Mode)
+
+The Broker backend holds Polymarket operator credentials and signs orders on your behalf. Best for server-side integrations, bots, and most use cases.
+
+**Header:**
+```
+X-API-Key: pm_live_sk_xxxxxxxxxxxxxxxx
+```
+
+The server resolves your API key to a user account, subscription tier, and permission scopes. All `POST /api/v1/orders` calls require this mode.
+
+### API Key Format
+
+| Prefix | Environment | Permissions |
+|---|---|---|
+| `pm_live_sk_` | Production (Polygon mainnet) | Full trading |
+| `pm_test_sk_` | Testnet (Polygon Amoy) | Test trading only |
+| `pm_live_ro_` | Production | Read-only, no trading |
+
+### Scopes
+
+When creating a key you select which scopes to grant:
+
+| Scope | Description |
+|---|---|
+| `markets:read` | Query markets, orderbooks, historical trades |
+| `orders:write` | Place and cancel orders |
+| `portfolio:read` | View positions and balance |
+| `data:read` | Enhanced data endpoints (sports / NBA / BTC) |
+| `analysis:read` | AI analysis endpoints |
+| `strategies:execute` | Execute pre-built strategies |
+| `webhooks:write` | Register and manage webhooks |
+
+### Create an API key
+
+```bash
+POST /api/v1/auth/keys
+Authorization: Bearer <jwt>
+
+{
+  "name": "Production trading bot",
+  "scopes": ["markets:read", "orders:write", "portfolio:read", "data:read"]
+}
+```
+
+**Response:**
+
+```json
+{
+  "key_id": "key_xyz789",
+  "name": "Production trading bot",
+  "api_key": "pm_live_sk_xxxxxxxxxxxxxxxx",
+  "scopes": ["markets:read", "orders:write", "portfolio:read", "data:read"],
+  "created_at": "2026-03-19T10:00:00Z"
+}
+```
+
+### List and revoke keys
+
+```bash
+GET  /api/v1/auth/keys          # List all API keys for your account
+DELETE /api/v1/auth/keys/{key_id}  # Revoke a key immediately
+```
+
+---
+
+## Mode B: Wallet Auth (Non-custodial Mode)
+
+In this mode, you sign orders locally with your own private key. The Broker never holds your signing credentials. Orders are EIP-712 typed and broadcast directly to Polymarket's CLOB.
+
+### Step 1 — Get a challenge nonce
+
+```bash
+POST /api/v1/auth/wallet/challenge
+Content-Type: application/json
+
+{}
+```
+
+**Response:**
+
+```json
+{
+  "nonce": "0x7f3a...",
+  "expires_at": "2026-03-19T10:15:00Z"
+}
+```
+
+### Step 2 — Sign the nonce (EIP-191)
+
+Sign the nonce string with your Ethereum wallet using `personal_sign` (EIP-191 prefix applied automatically by most wallet libraries).
+
+### Step 3 — Verify and get tokens
+
+```bash
+POST /api/v1/auth/wallet/verify
+Content-Type: application/json
+
+{
+  "address": "0xYourWalletAddress",
+  "signature": "0xSignedNonce..."
+}
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "rt_opaque_token",
+  "expires_in": 900
+}
+```
+
+The `access_token` is a JWT with a **15-minute TTL**. The `refresh_token` is opaque with a **30-day TTL**.
+
+### Refresh the access token
+
+```bash
+POST /api/v1/auth/wallet/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "rt_opaque_token"
+}
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "eyJ...",
+  "expires_in": 900
+}
+```
+
+### Build and submit orders (non-custodial)
+
+Non-custodial order flow uses two separate endpoints:
+
+**Build:**
+```bash
+POST /api/v1/orders/build
+Authorization: Bearer <access_token>
+
+{
+  "market_id": "0xabc...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "price": 0.72,
+  "size": 100.0
+}
+```
+
+**Response:**
+
+```json
+{
+  "eip712_payload": {
+    "domain": { ... },
+    "types": { ... },
+    "message": {
+      "feeRateBps": 10,
+      "price": "720000000000000000",
+      ...
+    }
+  },
+  "payload_hash": "0xhash..."
+}
+```
+
+Sign `eip712_payload` with your wallet using EIP-712 typed data signing.
+
+**Submit:**
+```bash
+POST /api/v1/orders/submit
+Authorization: Bearer <access_token>
+
+{
+  "payload_hash": "0xhash...",
+  "signature": "0xYourSignature..."
+}
+```
+
+The Broker verifies that `payload_hash` matches what it stored for your session (tamper protection on `feeRateBps`) and broadcasts the signed order.
+
+---
+
+## Email/Password Auth (Web Dashboard)
+
+For the web dashboard login flow:
+
+```bash
+POST /api/v1/auth/login
+{
+  "email": "you@example.com",
+  "password": "your-password"
+}
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "rt_..."
+}
+```
+
+---
+
+## Auth Errors
+
+| Status | Code | Description |
+|---|---|---|
+| 401 | `INVALID_API_KEY` | API key not found or revoked |
+| 401 | `INVALID_TOKEN` | JWT expired or malformed |
+| 401 | `INVALID_SIGNATURE` | Wallet signature verification failed |
+| 403 | `INSUFFICIENT_SCOPE` | Valid credentials but missing required scope |
+| 429 | `RATE_LIMIT_EXCEEDED` | Daily quota or per-minute burst exceeded |

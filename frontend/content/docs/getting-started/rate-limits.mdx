@@ -1,0 +1,102 @@
+---
+title: Rate Limits
+description: Understanding API quotas, burst limits, and rate limit responses
+---
+
+# Rate Limits
+
+All API keys are subject to rate limits based on your subscription tier. Limits apply per API key, not per account.
+
+## Tier Limits
+
+| Tier | Daily Calls | Per-Minute Burst | Taker Broker Fee | AI Analysis |
+|---|---|---|---|---|
+| **Free** | 500/day | 20 req/min | +10 bps (0.1%) | 10/day shared |
+| **Pro** ($99/mo) | Unlimited | 300 req/min | +5 bps (0.05%) | Unlimited |
+| **Enterprise** | Unlimited | Custom | Custom | Unlimited |
+
+**Maker fee**: 0% additional Broker fee at all tiers. This refers solely to the Broker's additive `feeRateBps` — Polymarket's own protocol fees apply separately.
+
+**AI Analysis quota**: On Free tier, the 10/day limit is shared across all `/api/v1/analysis/` endpoints (`/market/`, `/nba/`, `/ask`, `/scan`).
+
+**WebSocket connections**: Not counted against the daily call quota.
+
+## Rate Limit Response Headers
+
+Every API response includes rate limit information:
+
+```
+X-RateLimit-Limit: 500
+X-RateLimit-Remaining: 347
+X-RateLimit-Reset: 1742169600
+X-RateLimit-Burst-Limit: 20
+```
+
+| Header | Description |
+|---|---|
+| `X-RateLimit-Limit` | Your daily call quota |
+| `X-RateLimit-Remaining` | Calls remaining today |
+| `X-RateLimit-Reset` | Unix timestamp when the daily counter resets (midnight UTC) |
+| `X-RateLimit-Burst-Limit` | Max requests per minute |
+
+## 429 Too Many Requests
+
+When you exceed either the daily quota or the per-minute burst limit, the API returns HTTP `429`:
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Per-minute burst limit exceeded. Retry after 23 seconds.",
+    "details": {
+      "limit_type": "burst",
+      "retry_after_seconds": 23
+    }
+  }
+}
+```
+
+The response also includes a `Retry-After` header (in seconds).
+
+## Best Practices
+
+**Respect headers.** Check `X-RateLimit-Remaining` before making batch requests. If it's near zero, pause until `X-RateLimit-Reset`.
+
+**Handle 429 with exponential backoff.** Don't immediately retry on 429. Wait for the `Retry-After` value, then apply jitter to avoid synchronized retry storms.
+
+**Use WebSockets for streaming.** For real-time orderbook and price data, use the WebSocket endpoints (`/ws/markets/\{market_id\}`, `/ws/data/nba/\{game_id\}/live`). These don't count against your daily quota.
+
+**Cache responses.** Markets and orderbooks don't change on every millisecond. Cache responses where freshness requirements allow.
+
+## Upgrading Your Tier
+
+```bash
+POST /api/v1/developer/billing/upgrade
+Authorization: Bearer <jwt>
+Content-Type: application/json
+
+{
+  "tier": "pro"
+}
+```
+
+Check your current usage:
+
+```bash
+GET /api/v1/developer/usage
+X-API-Key: pm_live_sk_xxxxxxxxxxxxxxxx
+```
+
+**Response:**
+
+```json
+{
+  "calls_today": 153,
+  "calls_remaining": 347,
+  "tier": "free",
+  "reset_at": "2026-03-20T00:00:00Z",
+  "burst_limit": 20,
+  "ai_analysis_today": 4,
+  "ai_analysis_limit": 10
+}
+```

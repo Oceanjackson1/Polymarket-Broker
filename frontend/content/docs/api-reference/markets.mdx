@@ -1,0 +1,254 @@
+---
+title: Markets API
+description: Browse, search, and stream all Polymarket prediction market events
+---
+
+# Markets API
+
+Base path: `/api/v1/markets`
+
+Scope required: `markets:read`
+
+The Markets API provides access to all Polymarket events across all categories — politics, sports, finance, crypto, technology, and more. Backed by the Polymarket Gamma API, CLOB API, and real-time scraping.
+
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/markets` | List all markets (filterable) |
+| `GET` | `/markets/\{market_id\}` | Market detail |
+| `GET` | `/markets/\{market_id\}/orderbook` | Live order book |
+| `GET` | `/markets/\{market_id\}/trades` | Historical trades (paginated) |
+| `GET` | `/markets/\{market_id\}/midpoint` | Mid price |
+| `GET` | `/markets/search` | Full-text search |
+| `WS` | `/ws/markets/\{market_id\}` | Real-time orderbook stream |
+
+---
+
+## GET /markets
+
+List all markets. Supports filtering by category, status, and tags.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `category` | string | — | Filter by event category (e.g., `sports`, `politics`, `crypto`) |
+| `status` | string | `active` | Filter by status: `active`, `resolved`, `all` |
+| `tag` | string | — | Filter by tag slug |
+| `limit` | integer | 20 | Items per page (max 100) |
+| `cursor` | string | — | Cursor for pagination |
+| `sort` | string | `volume:desc` | Sort: `volume:desc`, `created_at:desc`, `close_time:asc` |
+
+**Response `200`:**
+
+```json
+{
+  "data": [
+    {
+      "market_id": "0xabc123...",
+      "title": "Will the LA Lakers win the 2026 NBA Championship?",
+      "category": "sports",
+      "tags": ["nba", "basketball"],
+      "status": "active",
+      "volume_24h": 45320.50,
+      "volume_total": 1234567.89,
+      "outcomes": [
+        {
+          "token_id": "217426331",
+          "label": "Yes",
+          "price": 0.12,
+          "volume": 987654.32
+        },
+        {
+          "token_id": "217426332",
+          "label": "No",
+          "price": 0.88,
+          "volume": 246913.57
+        }
+      ],
+      "resolution_source": "Polymarket",
+      "close_time": "2026-06-30T23:59:59Z",
+      "created_at": "2026-01-15T10:00:00Z"
+    }
+  ],
+  "pagination": {
+    "cursor": "eyJpZCI6IjB4YWJjMTIzIn0=",
+    "has_more": true,
+    "limit": 20
+  }
+}
+```
+
+---
+
+## GET /markets/\{market_id\}
+
+Get full detail for a single market.
+
+**Response `200`:**
+
+```json
+{
+  "market_id": "0xabc123...",
+  "title": "Will the LA Lakers win the 2026 NBA Championship?",
+  "description": "This market resolves YES if the LA Lakers win the 2026 NBA Championship.",
+  "category": "sports",
+  "tags": ["nba", "basketball"],
+  "status": "active",
+  "volume_24h": 45320.50,
+  "volume_total": 1234567.89,
+  "liquidity": 98765.43,
+  "outcomes": [...],
+  "resolution_source": "Polymarket",
+  "resolution_criteria": "...",
+  "close_time": "2026-06-30T23:59:59Z",
+  "created_at": "2026-01-15T10:00:00Z"
+}
+```
+
+**Error codes:**
+
+| Code | Status | Description |
+|---|---|---|
+| `MARKET_NOT_FOUND` | 404 | Market ID does not exist |
+
+---
+
+## GET /markets/\{market_id\}/orderbook
+
+Get the live CLOB order book for a market outcome.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `token_id` | string | — | Outcome token ID (required) |
+| `depth` | integer | 10 | Number of price levels on each side |
+
+**Response `200`:**
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "timestamp": "2026-03-19T14:22:05Z",
+  "bids": [
+    { "price": 0.11, "size": 500.0 },
+    { "price": 0.10, "size": 1200.0 }
+  ],
+  "asks": [
+    { "price": 0.12, "size": 300.0 },
+    { "price": 0.13, "size": 800.0 }
+  ],
+  "mid": 0.115,
+  "spread": 0.01
+}
+```
+
+---
+
+## GET /markets/\{market_id\}/trades
+
+Historical trades for a market outcome. Paginated, newest first by default.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `token_id` | string | — | Outcome token ID |
+| `limit` | integer | 50 | Items per page (max 100) |
+| `cursor` | string | — | Pagination cursor |
+| `from` | ISO 8601 | — | Start time filter |
+| `to` | ISO 8601 | — | End time filter |
+
+**Response `200`:**
+
+```json
+{
+  "data": [
+    {
+      "trade_id": "trade_xyz",
+      "token_id": "217426331",
+      "side": "BUY",
+      "price": 0.12,
+      "size": 100.0,
+      "maker": "0xMakerAddress...",
+      "taker": "0xTakerAddress...",
+      "transaction_hash": "0xtxhash...",
+      "timestamp": "2026-03-19T14:20:00Z"
+    }
+  ],
+  "pagination": { "cursor": "...", "has_more": true, "limit": 50 }
+}
+```
+
+---
+
+## GET /markets/\{market_id\}/midpoint
+
+Get the current midpoint price for a market outcome.
+
+**Query parameters:** `token_id` (required)
+
+**Response `200`:**
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "mid": 0.115,
+  "best_bid": 0.11,
+  "best_ask": 0.12,
+  "timestamp": "2026-03-19T14:22:05Z"
+}
+```
+
+---
+
+## GET /markets/search
+
+Full-text search across all market titles and descriptions.
+
+**Query parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `q` | string | Search query (required, min 2 chars) |
+| `limit` | integer | Results per page (default 20, max 50) |
+| `cursor` | string | Pagination cursor |
+
+**Response `200`:** Same structure as `GET /markets`.
+
+---
+
+## WS /ws/markets/\{market_id\}
+
+Real-time WebSocket stream for a market. Pushes orderbook updates and trade events as they occur.
+
+**Connection:** `wss://api.broker.polymarket.com/ws/markets/\{market_id\}?token_id=\{token_id\}`
+
+WebSocket connections are not counted against the daily API call quota.
+
+**Message format:**
+
+```json
+{
+  "type": "orderbook_update",
+  "token_id": "217426331",
+  "timestamp": "2026-03-19T14:22:05Z",
+  "bids": [...],
+  "asks": [...]
+}
+```
+
+```json
+{
+  "type": "trade",
+  "token_id": "217426331",
+  "price": 0.12,
+  "size": 100.0,
+  "side": "BUY",
+  "timestamp": "2026-03-19T14:22:06Z"
+}
+```

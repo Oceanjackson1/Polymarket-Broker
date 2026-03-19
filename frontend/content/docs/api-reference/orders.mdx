@@ -1,0 +1,291 @@
+---
+title: Orders API
+description: Place, cancel, and track prediction market orders in hosted and non-custodial modes
+---
+
+# Orders API
+
+Base path: `/api/v1/orders`
+
+Scope required: `orders:write` (for writes), `markets:read` (for reads)
+
+The Orders API supports both hosted mode (Broker signs on your behalf) and non-custodial mode (you sign with your own wallet).
+
+## Order Object
+
+All order endpoints return or reference the Order object:
+
+```json
+{
+  "order_id": "ord_abc123",
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "type": "LIMIT",
+  "price": 0.72,
+  "size": 100.0,
+  "size_filled": 45.0,
+  "size_remaining": 55.0,
+  "status": "PARTIALLY_FILLED",
+  "broker_fee_bps": 10,
+  "polymarket_order_id": "0x...",
+  "created_at": "2026-03-17T10:00:00Z",
+  "updated_at": "2026-03-17T10:01:00Z",
+  "expires_at": null
+}
+```
+
+**Status values:** `PENDING` `OPEN` `PARTIALLY_FILLED` `FILLED` `CANCELLED` `EXPIRED`
+
+## Endpoints
+
+| Method | Path | Description | Mode |
+|---|---|---|---|
+| `POST` | `/orders` | Place order | Hosted |
+| `POST` | `/orders/build` | Build EIP-712 payload | Non-custodial |
+| `POST` | `/orders/submit` | Submit signed order | Non-custodial |
+| `GET` | `/orders` | List orders (paginated) | Both |
+| `GET` | `/orders/\{order_id\}` | Order detail | Both |
+| `DELETE` | `/orders/\{order_id\}` | Cancel order | Both |
+| `DELETE` | `/orders` | Cancel all open orders | Both |
+
+---
+
+## POST /orders (Hosted Mode)
+
+Place an order. The Broker signs and submits to Polymarket using operator credentials.
+
+**Headers:** `X-API-Key: pm_live_sk_xxxxxxxxxxxxxxxx`
+
+**Request body:**
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "type": "LIMIT",
+  "price": 0.72,
+  "size": 100.0
+}
+```
+
+For GTD orders, add `expires_at`:
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "type": "GTD",
+  "price": 0.72,
+  "size": 100.0,
+  "expires_at": "2026-03-20T00:00:00Z"
+}
+```
+
+For TWAP orders:
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "type": "TWAP",
+  "price": 0.72,
+  "size": 1000.0,
+  "twap_intervals": 10,
+  "twap_interval_seconds": 60
+}
+```
+
+**Response `201`:** Returns the Order object.
+
+For TWAP orders, response includes `child_legs`:
+
+```json
+{
+  "order_id": "ord_twap_xxx",
+  "type": "TWAP",
+  "size": 1000.0,
+  "child_legs": ["ord_leg_1", "ord_leg_2", "ord_leg_3", "..."],
+  ...
+}
+```
+
+## Order Types
+
+| Type | Description | Notes |
+|---|---|---|
+| `LIMIT` | Limit order, Good-Till-Cancelled | Default |
+| `MARKET` | Market order, Fill-or-Kill | Immediate fill or cancel |
+| `GTD` | Limit with expiry | Requires `expires_at` |
+| `TWAP` | Time-weighted average price | Broker splits into child legs |
+
+---
+
+## POST /orders/build (Non-custodial)
+
+Construct an EIP-712 typed order payload for local signing.
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request body:**
+
+```json
+{
+  "market_id": "0xabc123...",
+  "token_id": "217426331",
+  "side": "BUY",
+  "price": 0.72,
+  "size": 100.0
+}
+```
+
+**Response `200`:**
+
+```json
+{
+  "eip712_payload": {
+    "domain": {
+      "name": "Polymarket CTF Exchange",
+      "version": "1",
+      "chainId": 137,
+      "verifyingContract": "0x..."
+    },
+    "types": {
+      "Order": [
+        { "name": "salt", "type": "uint256" },
+        { "name": "maker", "type": "address" },
+        { "name": "signer", "type": "address" },
+        { "name": "taker", "type": "address" },
+        { "name": "tokenId", "type": "uint256" },
+        { "name": "makerAmount", "type": "uint256" },
+        { "name": "takerAmount", "type": "uint256" },
+        { "name": "expiration", "type": "uint256" },
+        { "name": "nonce", "type": "uint256" },
+        { "name": "feeRateBps", "type": "uint256" },
+        { "name": "side", "type": "uint8" },
+        { "name": "signatureType", "type": "uint8" }
+      ]
+    },
+    "message": {
+      "feeRateBps": "10",
+      "makerAmount": "72000000",
+      "takerAmount": "100000000",
+      ...
+    }
+  },
+  "payload_hash": "0xhash...",
+  "expires_at": "2026-03-19T10:01:00Z"
+}
+```
+
+The `payload_hash` is stored server-side for 60 seconds. `feeRateBps` is injected by the server based on your subscription tier — you cannot modify it.
+
+---
+
+## POST /orders/submit (Non-custodial)
+
+Submit a signed order payload.
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request body:**
+
+```json
+{
+  "payload_hash": "0xhash...",
+  "signature": "0xYourEIP712Signature..."
+}
+```
+
+The Broker re-derives the expected payload from the stored hash and verifies:
+1. The submitted `payload_hash` matches what was stored (tamper protection)
+2. The signature is valid for the payload
+
+**Response `201`:** Returns the Order object.
+
+---
+
+## GET /orders
+
+List your orders with filtering.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `status` | string | — | Filter: `OPEN`, `FILLED`, `CANCELLED`, etc. |
+| `market_id` | string | — | Filter by market |
+| `limit` | integer | 20 | Per page (max 100) |
+| `cursor` | string | — | Pagination cursor |
+| `sort` | string | `created_at:desc` | Sort order |
+
+**Response `200`:**
+
+```json
+{
+  "data": [ ...Order objects... ],
+  "pagination": {
+    "cursor": "next_cursor",
+    "has_more": true,
+    "limit": 20
+  }
+}
+```
+
+---
+
+## GET /orders/\{order_id\}
+
+Get a single order by ID. For TWAP orders, includes child leg status.
+
+**Response `200`:** Returns the Order object.
+
+---
+
+## DELETE /orders/\{order_id\}
+
+Cancel a single order. For TWAP parent orders, cancels all unfilled child legs. Filled legs are settled.
+
+**Response `200`:**
+
+```json
+{
+  "order_id": "ord_abc123",
+  "status": "CANCELLED",
+  "cancelled_at": "2026-03-19T14:30:00Z"
+}
+```
+
+---
+
+## DELETE /orders
+
+Cancel all currently open orders (all markets).
+
+**Response `200`:**
+
+```json
+{
+  "cancelled_count": 7,
+  "cancelled_ids": ["ord_1", "ord_2", "..."]
+}
+```
+
+---
+
+## Error Codes
+
+| Code | Status | Description |
+|---|---|---|
+| `MARKET_NOT_FOUND` | 404 | Market ID does not exist |
+| `MARKET_CLOSED` | 400 | Market is no longer accepting orders |
+| `INSUFFICIENT_BALANCE` | 400 | USDC balance too low |
+| `ORDER_SIZE_TOO_LARGE` | 400 | Exceeds your tier's single-order size limit |
+| `POSITION_CAP_EXCEEDED` | 400 | Per-market position cap reached |
+| `INVALID_PRICE` | 400 | Price not in valid range (0.01 to 0.99) |
+| `ORDER_NOT_FOUND` | 404 | Order ID does not exist |
+| `ORDER_NOT_CANCELLABLE` | 400 | Order is already filled or cancelled |
+| `UPSTREAM_ERROR` | 502 | Polymarket CLOB returned an error |

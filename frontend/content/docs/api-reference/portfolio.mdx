@@ -1,0 +1,144 @@
+---
+title: Portfolio API
+description: View positions, USDC balance, and profit & loss
+---
+
+# Portfolio API
+
+Base path: `/api/v1/portfolio`
+
+Scope required: `portfolio:read`
+
+The Portfolio API provides read-only access to your current positions, USDC balance, and P&L breakdown.
+
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/portfolio/positions` | Current open positions |
+| `GET` | `/portfolio/balance` | USDC balance |
+| `GET` | `/portfolio/pnl` | Profit & loss |
+
+---
+
+## GET /portfolio/positions
+
+List all current open positions across all markets.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `market_id` | string | — | Filter by specific market |
+| `limit` | integer | 20 | Items per page (max 100) |
+| `cursor` | string | — | Pagination cursor |
+
+**Response `200`:**
+
+```json
+{
+  "data": [
+    {
+      "position_id": "pos_abc123",
+      "market_id": "0xabc123...",
+      "market_title": "Will the LA Lakers win the 2026 NBA Championship?",
+      "token_id": "217426331",
+      "outcome_label": "Yes",
+      "size": 200.0,
+      "avg_entry_price": 0.11,
+      "current_price": 0.14,
+      "unrealized_pnl": 6.0,
+      "unrealized_pnl_pct": 27.27,
+      "cost_basis": 22.0,
+      "market_value": 28.0,
+      "opened_at": "2026-03-15T10:00:00Z"
+    }
+  ],
+  "pagination": {
+    "cursor": "...",
+    "has_more": false,
+    "limit": 20
+  },
+  "summary": {
+    "total_positions": 5,
+    "total_cost_basis": 450.50,
+    "total_market_value": 523.75,
+    "total_unrealized_pnl": 73.25
+  }
+}
+```
+
+**Position fields:**
+
+| Field | Description |
+|---|---|
+| `size` | Number of shares (outcome tokens) held |
+| `avg_entry_price` | Average price paid per share |
+| `current_price` | Current mid price from CLOB |
+| `unrealized_pnl` | `(current_price - avg_entry_price) * size` |
+| `cost_basis` | `avg_entry_price * size` |
+| `market_value` | `current_price * size` |
+
+---
+
+## GET /portfolio/balance
+
+Get your current USDC balance.
+
+**Response `200`:**
+
+```json
+{
+  "balance": 1500.00,
+  "locked": 250.50,
+  "available": 1249.50,
+  "currency": "USDC",
+  "updated_at": "2026-03-19T14:22:05Z"
+}
+```
+
+| Field | Description |
+|---|---|
+| `balance` | Total USDC balance on Polygon |
+| `locked` | USDC committed to open orders |
+| `available` | `balance - locked`, available for new orders |
+
+---
+
+## GET /portfolio/pnl
+
+Get profit and loss breakdown.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `from` | ISO 8601 | Account start | Start date for P&L calculation |
+| `to` | ISO 8601 | Now | End date |
+
+**Response `200`:**
+
+```json
+{
+  "realized_pnl": 347.25,
+  "unrealized_pnl": 73.25,
+  "total_pnl": 420.50,
+  "fees_paid_broker": 12.50,
+  "fees_paid_polymarket": 0.0,
+  "volume_traded": 15432.75,
+  "trades_count": 87,
+  "win_rate": 0.632,
+  "period": {
+    "from": "2026-01-01T00:00:00Z",
+    "to": "2026-03-19T14:22:05Z"
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `realized_pnl` | P&L from closed positions |
+| `unrealized_pnl` | P&L from open positions at current prices |
+| `fees_paid_broker` | Broker fee (`feeRateBps` applied at fill time) |
+| `fees_paid_polymarket` | Polymarket protocol fees |
+| `win_rate` | Fraction of closed positions with positive P&L |

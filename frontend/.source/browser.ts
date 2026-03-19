@@ -1,0 +1,12 @@
+// @ts-nocheck
+import { browser } from 'fumadocs-mdx/runtime/browser';
+import type * as Config from '../source.config';
+
+const create = browser<typeof Config, import("fumadocs-mdx/runtime/types").InternalTypeConfig & {
+  DocData: {
+  }
+}>();
+const browserCollections = {
+  docs: create.doc("docs", {"changelog.mdx": () => import("../content/docs/changelog.mdx?collection=docs"), "index.mdx": () => import("../content/docs/index.mdx?collection=docs"), "api-reference/analysis.mdx": () => import("../content/docs/api-reference/analysis.mdx?collection=docs"), "api-reference/auth.mdx": () => import("../content/docs/api-reference/auth.mdx?collection=docs"), "api-reference/data-btc.mdx": () => import("../content/docs/api-reference/data-btc.mdx?collection=docs"), "api-reference/data-nba.mdx": () => import("../content/docs/api-reference/data-nba.mdx?collection=docs"), "api-reference/data-sports.mdx": () => import("../content/docs/api-reference/data-sports.mdx?collection=docs"), "api-reference/markets.mdx": () => import("../content/docs/api-reference/markets.mdx?collection=docs"), "api-reference/orders.mdx": () => import("../content/docs/api-reference/orders.mdx?collection=docs"), "api-reference/portfolio.mdx": () => import("../content/docs/api-reference/portfolio.mdx?collection=docs"), "api-reference/strategies.mdx": () => import("../content/docs/api-reference/strategies.mdx?collection=docs"), "getting-started/authentication.mdx": () => import("../content/docs/getting-started/authentication.mdx?collection=docs"), "getting-started/quickstart.mdx": () => import("../content/docs/getting-started/quickstart.mdx?collection=docs"), "getting-started/rate-limits.mdx": () => import("../content/docs/getting-started/rate-limits.mdx?collection=docs"), "guides/btc-multiframe.mdx": () => import("../content/docs/guides/btc-multiframe.mdx?collection=docs"), "guides/convergence-arbitrage.mdx": () => import("../content/docs/guides/convergence-arbitrage.mdx?collection=docs"), "guides/nba-fusion-trading.mdx": () => import("../content/docs/guides/nba-fusion-trading.mdx?collection=docs"), }),
+};
+export default browserCollections;

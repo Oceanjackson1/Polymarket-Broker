@@ -1,0 +1,39 @@
+---
+title: Polymarket Broker API
+description: Institutional-grade prediction market trading platform API documentation
+---
+
+# Polymarket Broker API
+
+The Polymarket Broker API is an institutional-grade REST API that wraps Polymarket's native CLOB and Gamma APIs, adds enhanced data infrastructure, and exposes a clean versioned API to both your own applications and third-party developers.
+
+## What makes it different
+
+- **NBA × Polymarket fusion data** — Live NBA scores cross-referenced with real-time Polymarket implied probabilities and bias signals. Unavailable via Polymarket directly.
+- **145-sport historical orderbooks** — Full historical order book data for every supported sport and esport category.
+- **BTC multi-timeframe predictions** — On-chain Polygon trade data at millisecond precision, combined with 5m/15m/1h/4h prediction markets.
+- **AI pricing-bias analysis** — DeepSeek-powered market analysis surfacing mispriced opportunities across all event categories.
+- **Dogfooded API** — The Broker's own Telegram Bot and Web Dashboard call the exact same endpoints you do. No internal priority queue.
+
+## Base URL
+
+```
+https://api.broker.polymarket.com/api/v1
+```
+
+All API responses use `application/json`. All request bodies must be `application/json` unless otherwise specified.
+
+## Versioning
+
+The API is versioned via the URL path (`/api/v1/`). Breaking changes will be released under a new version prefix. Non-breaking additions (new fields, new endpoints) may be added to the current version without notice.
+
+## Quick navigation
+
+<Cards>
+  <Card title="Quickstart" href="/docs/getting-started/quickstart" description="Get your first API call working in 5 minutes." />
+  <Card title="Authentication" href="/docs/getting-started/authentication" description="API keys and wallet-based auth explained." />
+  <Card title="Markets API" href="/docs/api-reference/markets" description="Browse and search all Polymarket events." />
+  <Card title="NBA Fusion Data" href="/docs/api-reference/data-nba" description="Live NBA scores × Polymarket odds." />
+  <Card title="BTC Predictions" href="/docs/api-reference/data-btc" description="Multi-timeframe BTC prediction data." />
+  <Card title="Convergence Arbitrage" href="/docs/guides/convergence-arbitrage" description="Execute near-certain outcome trades." />
+</Cards>

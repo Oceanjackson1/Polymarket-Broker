@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import "fumadocs-ui/style.css";
+import { RootProvider } from "fumadocs-ui/provider/next";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -55,6 +57,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <head>
@@ -63,7 +66,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <RootProvider theme={{ defaultTheme: 'dark' }}>{children}</RootProvider>
+      </body>
     </html>
   );
 }

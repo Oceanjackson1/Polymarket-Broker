@@ -1,0 +1,26 @@
+{
+  "title": "Polymarket Broker API",
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "getting-started/quickstart",
+    "getting-started/authentication",
+    "getting-started/rate-limits",
+    "---API Reference---",
+    "api-reference/auth",
+    "api-reference/markets",
+    "api-reference/orders",
+    "api-reference/portfolio",
+    "api-reference/data-sports",
+    "api-reference/data-nba",
+    "api-reference/data-btc",
+    "api-reference/analysis",
+    "api-reference/strategies",
+    "---Guides---",
+    "guides/nba-fusion-trading",
+    "guides/btc-multiframe",
+    "guides/convergence-arbitrage",
+    "---",
+    "changelog"
+  ]
+}

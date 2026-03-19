@@ -1,0 +1,89 @@
+---
+title: Changelog
+description: API version history and release notes
+---
+
+# Changelog
+
+## v1.0.0 — March 2026
+
+Initial public release of the Polymarket Broker API.
+
+### Features at launch
+
+**Authentication**
+- Email/password registration and login
+- Wallet-based non-custodial auth (EIP-191 challenge/verify flow)
+- API key management with granular scopes
+- JWT access tokens (15-minute TTL) + opaque refresh tokens (30-day TTL)
+
+**Markets**
+- Full market listing with category, status, tag filters
+- Market detail, orderbook, historical trades, midpoint
+- Full-text search
+- Real-time WebSocket orderbook stream
+
+**Orders**
+- Hosted mode: Broker signs and submits on your behalf
+- Non-custodial mode: EIP-712 build/submit flow
+- Order types: LIMIT, MARKET (FOK), GTD (with expiry), TWAP
+- List, detail, cancel individual order, cancel all open orders
+
+**Portfolio**
+- Positions with unrealized P&L
+- USDC balance (total, locked, available)
+- P&L with realized/unrealized split and fee breakdown
+
+**Data: Sports**
+- 145 sport and esport categories
+- Event listing, historical orderbooks (full time series), realized trades
+
+**Data: NBA**
+- Live game listing with Polymarket market linkage
+- Game detail with live score, quarter, and time remaining
+- Fusion endpoint: live score × Polymarket odds + bias signal
+- Real-time WebSocket sync
+
+**Data: BTC**
+- Multi-timeframe prediction market data (5m, 15m, 1h, 4h)
+- On-chain Polygon trade data at millisecond precision
+- Historical backfill via Gamma API
+
+**Analysis**
+- AI probability estimate per market (DeepSeek-R1)
+- Full-market scan for pricing bias opportunities
+- NBA game AI directional suggestion
+- Natural language query endpoint
+
+**Strategies**
+- Convergence arbitrage: find and execute near-certain outcome trades
+- Active convergence position tracking
+
+**Rate Limits**
+- Free: 500 calls/day, 20 req/min burst, 10 AI calls/day
+- Pro ($99/mo): Unlimited, 300 req/min burst, unlimited AI calls
+- Enterprise: Custom
+
+**Webhooks**
+- Event types: `order.filled`, `order.cancelled`, `market.resolved`, `position.opened`, `position.closed`, `strategy.executed`, `analysis.signal`
+- HMAC-SHA256 signed payloads
+- Exponential backoff retry (5 attempts)
+
+---
+
+## Upcoming
+
+**v1.1 — Q2 2026 (planned)**
+
+- Weather forecast × Polymarket temperature market fusion (`/data/weather/`)
+- SDK releases: Python and TypeScript
+- Webhook dead-letter queue and replay
+- Developer portal usage dashboard improvements
+- Streaming analysis signals via WebSocket
+
+**v2.0 — H2 2026 (planned)**
+
+- Portfolio-level risk analytics
+- Cross-market correlation data
+- Strategy builder (custom strategy definitions via API)
+- Institutional-tier dedicated infrastructure

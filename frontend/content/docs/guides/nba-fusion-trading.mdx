@@ -1,0 +1,184 @@
+---
+title: NBA Fusion Trading
+description: How to use live NBA score × Polymarket odds fusion to find and act on pricing bias
+---
+
+# NBA Fusion Trading
+
+This guide explains how to use the NBA Fusion Data endpoint to identify when Polymarket is mispricing an in-game outcome based on actual game state — and how to act on it.
+
+## The Core Insight
+
+Polymarket is a decentralized market. During live NBA games, the crowd of market participants doesn't always process score changes instantly. A team that just went up by 15 points in the 4th quarter may still be priced as if the game is close for 30-60 seconds after the score updates.
+
+The fusion endpoint detects this: it compares the market-implied probability to a win probability model that accounts for current score, quarter, and time remaining. When the gap exceeds 300 bps, it flags a `bias_signal`.
+
+## Step 1: Find Live Games with Bias Signals
+
+Poll the games list for live games, then check fusion for each:
+
+```python
+import httpx
+
+API_KEY = "pm_live_sk_xxxxxxxxxxxxxxxx"
+BASE_URL = "https://api.broker.polymarket.com/api/v1"
+
+headers = {"X-API-Key": API_KEY}
+
+# Get live games
+games = httpx.get(f"{BASE_URL}/data/nba/games?status=live", headers=headers).json()
+
+for game in games["games"]:
+    game_id = game["game_id"]
+    fusion = httpx.get(f"{BASE_URL}/data/nba/games/{game_id}/fusion", headers=headers).json()
+
+    bias = fusion.get("bias_signal", {})
+    if bias.get("direction") != "NEUTRAL":
+        print(f"{game_id}: {bias['direction']} — {bias['magnitude_bps']} bps")
+        print(f"  Market: home={fusion['polymarket']['home_win_prob']:.2%}, away={fusion['polymarket']['away_win_prob']:.2%}")
+        print(f"  Model:  home={fusion['model']['home_win_prob']:.2%}, away={fusion['model']['away_win_prob']:.2%}")
+```
+
+## Step 2: Evaluate the Opportunity
+
+Not every bias signal is worth trading. Consider:
+
+**Signal strength:** A 300 bps signal just barely crosses the threshold. Signals above 600 bps are typically more reliable.
+
+**Quarter and time remaining:** Bias signals in Q4 with under 2 minutes remaining are high-conviction but thin — markets tend to be wide. Q3 signals with 8+ minutes remaining give more time for mean reversion before resolution.
+
+**Liquidity:** Check the orderbook before committing size.
+
+```python
+orderbook = httpx.get(
+    f"{BASE_URL}/data/nba/games/{game_id}/orderbook",
+    headers=headers
+).json()
+
+# For HOME_UNDERPRICED: we want to BUY home team
+home = orderbook["home_outcome"]
+best_ask = home["asks"][0]["price"]
+ask_depth = sum(level["size"] for level in home["asks"][:3])
+
+print(f"Best ask: {best_ask:.3f}, top-3 depth: ${ask_depth:,.0f}")
+```
+
+## Step 3: Place the Order
+
+```python
+# HOME_UNDERPRICED → buy the home team outcome
+order = httpx.post(
+    f"{BASE_URL}/orders",
+    headers={**headers, "Content-Type": "application/json"},
+    json={
+        "market_id": fusion["polymarket"]["market_id"],
+        "token_id": orderbook["home_outcome"]["token_id"],
+        "side": "BUY",
+        "type": "LIMIT",
+        "price": best_ask,   # take from the ask side
+        "size": 200.0        # $200 USDC position
+    }
+).json()
+
+print(f"Order placed: {order['order_id']}, status: {order['status']}")
+```
+
+## Step 4: Use the WebSocket for Real-Time Signals
+
+Polling fusion every few seconds works but adds latency. For tighter timing, use the WebSocket:
+
+```python
+import asyncio
+import websockets
+import json
+
+async def watch_game(game_id: str, api_key: str):
+    uri = f"wss://api.broker.polymarket.com/ws/data/nba/{game_id}/live"
+    async with websockets.connect(uri, extra_headers={"X-API-Key": api_key}) as ws:
+        async for message in ws:
+            data = json.loads(message)
+            if data["type"] == "odds_update":
+                bias = data.get("bias_signal", {})
+                if bias.get("direction") != "NEUTRAL" and bias.get("magnitude_bps", 0) >= 600:
+                    print(f"STRONG SIGNAL: {bias['direction']} ({bias['magnitude_bps']} bps)")
+                    # Trigger your order logic here
+
+asyncio.run(watch_game("nba_2026_gsw_lal", API_KEY))
+```
+
+## Risk Management
+
+**Position limits.** Never size a single game trade larger than you're comfortable losing in full. NBA markets can resolve very quickly once the outcome becomes certain.
+
+**Signal decay.** A `HOME_UNDERPRICED` signal can reverse within seconds if the away team scores again. Set a maximum wait time (e.g., cancel and exit if the order hasn't filled in 30 seconds).
+
+**Check `stale` flag.** If `"stale": true`, the collector hasn't received a fresh update. Don't trade on stale fusion data.
+
+```python
+if fusion.get("stale"):
+    print("Stale data — skipping")
+    continue
+```
+
+## Complete Example
+
+```python
+import httpx
+import time
+
+API_KEY = "pm_live_sk_xxxxxxxxxxxxxxxx"
+BASE_URL = "https://api.broker.polymarket.com/api/v1"
+headers = {"X-API-Key": API_KEY}
+
+MIN_BIAS_BPS = 600
+MAX_POSITION_SIZE = 500.0
+
+def scan_and_trade():
+    games = httpx.get(f"{BASE_URL}/data/nba/games?status=live", headers=headers).json()
+
+    for game in games["games"]:
+        game_id = game["game_id"]
+        fusion = httpx.get(f"{BASE_URL}/data/nba/games/{game_id}/fusion", headers=headers).json()
+
+        if fusion.get("stale"):
+            continue
+
+        bias = fusion.get("bias_signal", {})
+        if bias.get("direction") == "NEUTRAL" or bias.get("magnitude_bps", 0) < MIN_BIAS_BPS:
+            continue
+
+        # Determine which side to buy
+        direction = bias["direction"]
+        orderbook = httpx.get(f"{BASE_URL}/data/nba/games/{game_id}/orderbook", headers=headers).json()
+
+        if direction == "HOME_UNDERPRICED":
+            side_data = orderbook["home_outcome"]
+        else:
+            side_data = orderbook["away_outcome"]
+
+        best_ask = side_data["asks"][0]["price"]
+        token_id = side_data["token_id"]
+
+        # Sanity check: don't buy above 0.70 (too expensive for the edge)
+        if best_ask > 0.70:
+            continue
+
+        order = httpx.post(
+            f"{BASE_URL}/orders",
+            headers={**headers, "Content-Type": "application/json"},
+            json={
+                "market_id": fusion["polymarket"]["market_id"],
+                "token_id": token_id,
+                "side": "BUY",
+                "type": "LIMIT",
+                "price": best_ask,
+                "size": min(MAX_POSITION_SIZE, side_data["asks"][0]["size"])
+            }
+        ).json()
+
+        print(f"Order: {order['order_id']} for {game_id} ({direction}, {bias['magnitude_bps']} bps)")
+
+while True:
+    scan_and_trade()
+    time.sleep(15)
+```

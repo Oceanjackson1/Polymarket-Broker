@@ -8,7 +8,11 @@ from data_pipeline.base import BaseCollector
 from api.data.btc.models import BtcSnapshot
 from core.polymarket.gamma_client import GammaClient
 
-COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+from core.config import get_settings as _get_settings
+
+COINGECKO_URL = (
+    f"{_get_settings().coingecko_api_base}/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+)
 TIMEFRAMES = ["5m", "15m", "1h", "4h"]
 
 
@@ -35,6 +39,9 @@ class BtcCollector(BaseCollector):
 
     def __init__(self):
         self._gamma = GammaClient()
+
+    async def teardown(self) -> None:
+        await self._gamma.close()
 
     async def collect(self, db: AsyncSession) -> None:
         # 1. Fetch BTC price from CoinGecko

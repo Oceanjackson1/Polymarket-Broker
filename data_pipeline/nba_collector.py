@@ -8,8 +8,10 @@ from data_pipeline.base import BaseCollector
 from api.data.nba.models import NbaGame
 from core.polymarket.gamma_client import GammaClient
 
+from core.config import get_settings as _get_settings
+
 ESPN_SCOREBOARD_URL = (
-    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
+    f"{_get_settings().espn_api_base}/apis/site/v2/sports/basketball/nba/scoreboard"
 )
 BIAS_THRESHOLD_BPS = 300
 
@@ -90,6 +92,9 @@ class NbaCollector(BaseCollector):
 
     def __init__(self):
         self._gamma = GammaClient()
+
+    async def teardown(self) -> None:
+        await self._gamma.close()
 
     async def collect(self, db: AsyncSession) -> None:
         # 1. Fetch ESPN scoreboard

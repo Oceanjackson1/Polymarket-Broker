@@ -3,7 +3,7 @@ import base64
 from datetime import datetime, UTC, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, desc
+from sqlalchemy import select, func, and_, desc, or_
 
 from db.postgres import get_session
 from api.deps import get_current_user_from_api_key, require_scope
@@ -57,15 +57,21 @@ async def get_sport_events(
         conditions.append(SportsEvent.status == status)
     if cursor:
         try:
-            cursor_dt = datetime.fromisoformat(base64.b64decode(cursor).decode())
-            conditions.append(SportsEvent.data_updated_at < cursor_dt)
+            decoded = base64.b64decode(cursor).decode()
+            cursor_dt_str, cursor_id_str = decoded.split("|")
+            cursor_dt = datetime.fromisoformat(cursor_dt_str)
+            cursor_id = int(cursor_id_str)
+            conditions.append(or_(
+                SportsEvent.data_updated_at < cursor_dt,
+                and_(SportsEvent.data_updated_at == cursor_dt, SportsEvent.id < cursor_id),
+            ))
         except Exception:
             pass
 
     stmt = (
         select(SportsEvent)
         .where(and_(*conditions))
-        .order_by(desc(SportsEvent.data_updated_at))
+        .order_by(desc(SportsEvent.data_updated_at), desc(SportsEvent.id))
         .limit(limit + 1)
     )
     result = await db.execute(stmt)
@@ -77,7 +83,10 @@ async def get_sport_events(
 
     next_cursor = None
     if has_more and events:
-        next_cursor = base64.b64encode(events[-1].data_updated_at.isoformat().encode()).decode()
+        last = events[-1]
+        next_cursor = base64.b64encode(
+            f"{last.data_updated_at.isoformat()}|{last.id}".encode()
+        ).decode()
 
     most_recent = max((e.data_updated_at for e in events), default=None)
     stale = _is_stale(most_recent) if most_recent else True

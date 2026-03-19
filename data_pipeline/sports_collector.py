@@ -25,6 +25,9 @@ class SportsCollector(BaseCollector):
     def __init__(self):
         self._gamma = GammaClient()
 
+    async def teardown(self) -> None:
+        await self._gamma.close()
+
     async def collect(self, db: AsyncSession) -> None:
         client = self._gamma
         offset = 0

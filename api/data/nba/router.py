@@ -3,7 +3,7 @@ import base64
 from datetime import datetime, UTC, date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, desc
+from sqlalchemy import select, and_, desc, or_
 
 from db.postgres import get_session
 from api.deps import get_current_user_from_api_key, require_scope
@@ -44,15 +44,21 @@ async def list_nba_games(
         conditions.append(NbaGame.game_status == status)
     if cursor:
         try:
-            cursor_dt = datetime.fromisoformat(base64.b64decode(cursor).decode())
-            conditions.append(NbaGame.data_updated_at < cursor_dt)
+            decoded = base64.b64decode(cursor).decode()
+            cursor_dt_str, cursor_id_str = decoded.split("|")
+            cursor_dt = datetime.fromisoformat(cursor_dt_str)
+            cursor_id = int(cursor_id_str)
+            conditions.append(or_(
+                NbaGame.data_updated_at < cursor_dt,
+                and_(NbaGame.data_updated_at == cursor_dt, NbaGame.id < cursor_id),
+            ))
         except Exception:
             pass
 
     stmt = (
         select(NbaGame)
         .where(and_(*conditions))
-        .order_by(desc(NbaGame.data_updated_at))
+        .order_by(desc(NbaGame.data_updated_at), desc(NbaGame.id))
         .limit(limit + 1)
     )
     result = await db.execute(stmt)
@@ -64,7 +70,10 @@ async def list_nba_games(
 
     next_cursor = None
     if has_more and games:
-        next_cursor = base64.b64encode(games[-1].data_updated_at.isoformat().encode()).decode()
+        last = games[-1]
+        next_cursor = base64.b64encode(
+            f"{last.data_updated_at.isoformat()}|{last.id}".encode()
+        ).decode()
 
     return PaginatedNbaGames(
         data=[NbaGameResponse.model_validate(g) for g in games],

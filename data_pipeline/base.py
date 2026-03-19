@@ -22,20 +22,27 @@ class BaseCollector:
     async def collect(self, db: AsyncSession) -> None:
         raise NotImplementedError
 
+    async def teardown(self) -> None:
+        """Called after the run loop exits. Subclasses override for cleanup (e.g., close HTTP clients)."""
+        pass
+
     async def run(self, db_factory) -> None:
         logger.info(f"[{self.name}] starting (interval={self.interval_seconds}s)")
-        while True:
-            try:
-                async with db_factory() as db:
-                    await self.collect(db)
-                    logger.debug(f"[{self.name}] collect cycle complete")
-            except asyncio.CancelledError:
-                logger.info(f"[{self.name}] stopped")
-                raise
-            except Exception as e:
-                logger.error(f"[{self.name}] collect failed: {e}")
-            try:
-                await asyncio.sleep(self.interval_seconds)
-            except asyncio.CancelledError:
-                logger.info(f"[{self.name}] stopped")
-                raise
+        try:
+            while True:
+                try:
+                    async with db_factory() as db:
+                        await self.collect(db)
+                        logger.debug(f"[{self.name}] collect cycle complete")
+                except asyncio.CancelledError:
+                    logger.info(f"[{self.name}] stopped")
+                    raise
+                except Exception as e:
+                    logger.error(f"[{self.name}] collect failed: {e}")
+                try:
+                    await asyncio.sleep(self.interval_seconds)
+                except asyncio.CancelledError:
+                    logger.info(f"[{self.name}] stopped")
+                    raise
+        finally:
+            await self.teardown()

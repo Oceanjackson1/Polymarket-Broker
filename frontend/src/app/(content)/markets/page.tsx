@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { MarketsClient } from "./_components/markets-client";
 
 // ── Metadata (SSG) ────────────────────────────────────────────────────────────
@@ -138,16 +137,19 @@ export default function MarketsPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="min-h-screen bg-bg-base">
+      <div className="min-h-screen bg-black">
         {/* Page header */}
-        <div className="border-b border-border-subtle bg-bg-card px-6 py-10">
-          <div className="mx-auto max-w-7xl">
-            <h1 className="text-3xl font-bold text-text-primary">
+        <div className="border-b border-white/[0.06] bg-black px-6 py-10">
+          <div className="mx-auto max-w-6xl">
+            <p className="mb-3 text-xs font-medium uppercase tracking-widest text-white/25">
+              Markets
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-white">
               Prediction Markets
             </h1>
-            <p className="mt-2 text-text-secondary">
+            <p className="mt-2 text-[15px] text-white/60">
               Browse{" "}
-              <span className="font-mono text-accent-gold">
+              <span className="font-mono tabular-nums text-white">
                 {MOCK_MARKETS.length}
               </span>{" "}
               markets across politics, sports, crypto, science, and culture.

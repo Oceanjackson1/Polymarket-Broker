@@ -76,18 +76,18 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-bg-base px-4 py-16">
+    <section className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-black px-4 py-16">
       <div className="w-full max-w-md">
-        <div className="rounded-xl border border-border-subtle bg-bg-card p-8">
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold text-text-primary">
+            <h1 className="text-2xl font-semibold text-white">
               Create your account
             </h1>
-            <p className="mt-2 text-sm text-text-secondary">
+            <p className="mt-2 text-[15px] text-white/60">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="font-medium text-accent-gold hover:text-accent-gold-hover"
+                className="text-white transition-colors hover:text-white/80"
               >
                 Sign in
               </Link>
@@ -98,7 +98,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="email"
-                className="mb-1.5 block text-sm font-medium text-text-primary"
+                className="mb-1.5 block text-[15px] font-medium text-white/60"
               >
                 Email
               </label>
@@ -110,14 +110,14 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-lg border border-border-default bg-bg-elevated px-4 py-2.5 text-sm text-text-primary placeholder-text-muted outline-none transition-colors focus:border-accent-gold focus:ring-1 focus:ring-accent-gold"
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-[15px] text-white placeholder-white/25 outline-none transition-colors focus:border-white/20 focus:ring-0"
               />
             </div>
 
             <div>
               <label
                 htmlFor="password"
-                className="mb-1.5 block text-sm font-medium text-text-primary"
+                className="mb-1.5 block text-[15px] font-medium text-white/60"
               >
                 Password
               </label>
@@ -130,15 +130,15 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-lg border border-border-default bg-bg-elevated px-4 py-2.5 text-sm text-text-primary placeholder-text-muted outline-none transition-colors focus:border-accent-gold focus:ring-1 focus:ring-accent-gold"
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-[15px] text-white placeholder-white/25 outline-none transition-colors focus:border-white/20 focus:ring-0"
               />
-              <p className="mt-1.5 text-xs text-text-muted">
+              <p className="mt-1.5 text-xs text-white/25">
                 Minimum 8 characters
               </p>
             </div>
 
             {error && (
-              <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
+              <p className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
                 {error}
               </p>
             )}
@@ -146,12 +146,12 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-accent-gold px-4 py-2.5 text-sm font-semibold text-bg-base transition-colors hover:bg-accent-gold-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-full bg-white px-4 py-2.5 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Creating account…" : "Create free account"}
             </button>
 
-            <p className="text-center text-xs text-text-muted">
+            <p className="text-center text-xs text-white/25">
               Free plan: 500 API calls/day · No credit card required
             </p>
           </form>

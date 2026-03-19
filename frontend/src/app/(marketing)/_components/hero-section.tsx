@@ -150,7 +150,7 @@ export function HeroSection() {
         {/* ── Text ── */}
         <div className="mx-auto max-w-3xl text-center">
           <motion.p
-            className="mb-6 text-sm font-medium tracking-widest text-white/40"
+            className="mb-6 text-xs font-medium uppercase tracking-widest text-white/25"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
@@ -166,11 +166,11 @@ export function HeroSection() {
           >
             Prediction markets,
             <br />
-            <span className="text-white/40">reimagined.</span>
+            <span className="text-white/30">reimagined.</span>
           </motion.h1>
 
           <motion.p
-            className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-white/50"
+            className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-white/60"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.25 }}
@@ -268,10 +268,10 @@ export function ExclusiveFeaturesGrid({ features }: { features: ExclusiveFeature
             <h3 className="mb-2 text-xl font-semibold text-white">
               {feature.title}
             </h3>
-            <p className="text-sm leading-relaxed text-white/40">
+            <p className="text-sm leading-relaxed text-white/50">
               {feature.description}
             </p>
-            <p className="mt-6 text-sm text-white/30 transition-colors group-hover:text-white/60">
+            <p className="mt-6 text-sm text-white/25 transition-colors group-hover:text-white/50">
               Learn more →
             </p>
           </Link>

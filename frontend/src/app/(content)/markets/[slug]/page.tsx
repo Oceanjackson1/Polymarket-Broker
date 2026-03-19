@@ -102,10 +102,10 @@ export default async function MarketDetailPage({
   if (!market) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-        <p className="text-text-muted">Market not found.</p>
+        <p className="text-white/40">Market not found.</p>
         <Link
           href="/markets"
-          className="mt-4 inline-block text-accent-gold hover:underline"
+          className="mt-4 inline-block text-white/60 transition-colors hover:text-white"
         >
           ← Back to Markets
         </Link>
@@ -152,13 +152,13 @@ export default async function MarketDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="min-h-screen bg-bg-base">
+      <div className="min-h-screen bg-black">
         {/* Back nav */}
-        <div className="border-b border-border-subtle bg-bg-card">
+        <div className="border-b border-white/[0.06] bg-black">
           <div className="mx-auto max-w-4xl px-6 py-3">
             <Link
               href="/markets"
-              className="text-xs text-text-muted transition-colors hover:text-text-secondary"
+              className="text-xs text-white/40 transition-colors hover:text-white/60"
             >
               ← All Markets
             </Link>
@@ -169,30 +169,30 @@ export default async function MarketDetailPage({
           {/* ── Market Title + Probability ──────────────────── */}
           <div className="mb-8">
             <div className="mb-3 flex items-center gap-2">
-              <span className="rounded bg-bg-card px-2 py-0.5 font-mono text-[10px] text-text-muted">
-                {detail.category.toUpperCase()}
+              <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-white/40">
+                {detail.category}
               </span>
             </div>
-            <h1 className="mb-4 text-2xl font-bold leading-snug text-text-primary">
+            <h1 className="mb-4 text-2xl font-semibold leading-snug tracking-tight text-white">
               {market.title}
             </h1>
             <div className="flex flex-wrap items-center gap-4">
               <AnimatedProbability probability={market.probability} yesLabel={market.yesLabel} />
-              <div className="h-8 w-px bg-border-subtle" />
+              <div className="h-8 w-px bg-white/[0.08]" />
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-text-muted">
+                <p className="text-[10px] font-medium uppercase tracking-widest text-white/25">
                   Volume
                 </p>
-                <p className="font-mono text-lg font-semibold text-text-primary">
+                <p className="font-mono text-lg font-semibold tabular-nums text-white">
                   {market.volume}
                 </p>
               </div>
-              <div className="h-8 w-px bg-border-subtle" />
+              <div className="h-8 w-px bg-white/[0.08]" />
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-text-muted">
+                <p className="text-[10px] font-medium uppercase tracking-widest text-white/25">
                   Last Updated
                 </p>
-                <p className="font-mono text-sm text-text-secondary">
+                <p className="font-mono text-sm text-white/60">
                   Just now
                 </p>
               </div>
@@ -200,11 +200,11 @@ export default async function MarketDetailPage({
           </div>
 
           {/* ── Chart Placeholder ─────────────────────────── */}
-          <div className="mb-8 rounded-xl border border-border-subtle bg-bg-card p-5">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+          <div className="mb-8 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <p className="mb-3 text-[10px] font-medium uppercase tracking-widest text-white/25">
               Price History
             </p>
-            <div className="relative h-48 rounded border border-border-subtle bg-bg-base p-3">
+            <div className="relative h-48 rounded-xl border border-white/[0.06] bg-black p-3">
               <svg
                 className="h-full w-full"
                 viewBox="0 0 400 150"
@@ -218,15 +218,15 @@ export default async function MarketDetailPage({
                     y1={i * 37.5}
                     x2="400"
                     y2={i * 37.5}
-                    stroke="var(--border-subtle)"
+                    stroke="rgba(255,255,255,0.05)"
                     strokeWidth="0.5"
                   />
                 ))}
                 {/* Probability line */}
                 <polyline
                   fill="none"
-                  stroke="var(--accent-gold)"
-                  strokeWidth="2.5"
+                  stroke="rgba(255,255,255,0.6)"
+                  strokeWidth="2"
                   strokeLinejoin="round"
                   points={history
                     .map((p, i) => {
@@ -239,8 +239,7 @@ export default async function MarketDetailPage({
                 />
                 {/* Area fill */}
                 <polyline
-                  fill="var(--accent-gold)"
-                  fillOpacity="0.08"
+                  fill="rgba(255,255,255,0.04)"
                   stroke="none"
                   points={[
                     ...history.map((p, i) => {
@@ -262,55 +261,55 @@ export default async function MarketDetailPage({
                       cx="400"
                       cy={y}
                       r="4"
-                      fill="var(--accent-gold)"
+                      fill="white"
                     />
                   );
                 })()}
               </svg>
               {/* Y-axis labels */}
               <div className="pointer-events-none absolute inset-y-0 left-3 flex flex-col justify-between py-2">
-                <span className="font-mono text-[9px] text-text-muted">
+                <span className="font-mono text-[9px] text-white/30">
                   {(maxProb * 100).toFixed(0)}%
                 </span>
-                <span className="font-mono text-[9px] text-text-muted">
+                <span className="font-mono text-[9px] text-white/30">
                   {(minProb * 100).toFixed(0)}%
                 </span>
               </div>
             </div>
             <div className="mt-2 flex items-center gap-4">
-              <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-                <span className="inline-block h-0.5 w-4 bg-accent-gold" />{" "}
+              <span className="flex items-center gap-1.5 text-[10px] text-white/25">
+                <span className="inline-block h-0.5 w-4 bg-white/40" />{" "}
                 YES probability over time
               </span>
             </div>
           </div>
 
           {/* ── Market Info ───────────────────────────────── */}
-          <div className="mb-8 rounded-xl border border-border-subtle bg-bg-card p-5">
-            <p className="mb-4 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+          <div className="mb-8 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <p className="mb-4 text-[10px] font-medium uppercase tracking-widest text-white/25">
               Market Info
             </p>
             <div className="grid grid-cols-3 gap-6">
               <div>
-                <p className="mb-1 text-[10px] text-text-muted">Resolution</p>
-                <p className="text-sm text-text-secondary">
+                <p className="mb-1 text-[10px] text-white/25">Resolution</p>
+                <p className="text-[15px] leading-relaxed text-white/60">
                   {detail.resolution}
                 </p>
               </div>
               <div>
-                <p className="mb-1 text-[10px] text-text-muted">End Date</p>
-                <p className="font-mono text-sm text-text-primary">
+                <p className="mb-1 text-[10px] text-white/25">End Date</p>
+                <p className="font-mono text-[15px] tabular-nums text-white">
                   {detail.endDate}
                 </p>
               </div>
               <div>
-                <p className="mb-1 text-[10px] text-text-muted">Category</p>
-                <p className="text-sm text-text-primary">{detail.category}</p>
+                <p className="mb-1 text-[10px] text-white/25">Category</p>
+                <p className="text-[15px] text-white">{detail.category}</p>
               </div>
             </div>
             {detail.description && (
-              <div className="mt-4 border-t border-border-subtle pt-4">
-                <p className="text-sm leading-relaxed text-text-secondary">
+              <div className="mt-4 border-t border-white/[0.06] pt-4">
+                <p className="text-[15px] leading-relaxed text-white/60">
                   {detail.description}
                 </p>
               </div>
@@ -318,33 +317,33 @@ export default async function MarketDetailPage({
           </div>
 
           {/* ── CTA ──────────────────────────────────────── */}
-          <div className="rounded-xl border border-accent-gold/20 bg-bg-card p-6">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-text-primary">
+                <p className="text-[15px] font-semibold text-white">
                   Ready to trade this market?
                 </p>
-                <p className="mt-1 text-xs text-text-muted">
+                <p className="mt-1 text-xs text-white/40">
                   Current odds:{" "}
-                  <span className="font-mono text-accent-gold">
+                  <span className="font-mono tabular-nums text-white/60">
                     {market.probability}% {market.yesLabel}
                   </span>{" "}
                   · Volume{" "}
-                  <span className="font-mono text-text-secondary">
+                  <span className="font-mono tabular-nums text-white/60">
                     {market.volume}
                   </span>
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <Link
-                  href="/dashboard"
-                  className="rounded-lg border border-border-default px-5 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:border-accent-gold/40 hover:text-text-primary"
+                  href="/login"
+                  className="rounded-full border border-white/15 px-5 py-2.5 text-[15px] font-medium text-white/60 transition-all hover:border-white/30 hover:text-white"
                 >
                   Login to Trade
                 </Link>
                 <Link
-                  href="/dashboard"
-                  className="btn-premium rounded-lg bg-accent-gold px-5 py-2.5 text-sm font-semibold text-bg-base transition-colors hover:bg-accent-gold-hover"
+                  href="/register"
+                  className="rounded-full bg-white px-5 py-2.5 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
                 >
                   Trade Now →
                 </Link>

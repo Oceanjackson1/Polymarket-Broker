@@ -11,14 +11,14 @@ export function AnimatedProbability({ probability, yesLabel }: AnimatedProbabili
   return (
     <div className="flex items-baseline gap-2">
       <motion.span
-        className="font-mono text-4xl font-bold text-accent-gold"
+        className="font-mono text-4xl font-semibold tabular-nums text-white"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
         {probability}%
       </motion.span>
-      <span className="text-lg font-medium text-text-secondary">
+      <span className="text-lg font-medium text-white/60">
         {yesLabel}
       </span>
     </div>

@@ -106,34 +106,37 @@ export default function PricingPage() {
       />
 
       {/* Header */}
-      <section className="bg-bg-base">
-        <div className="mx-auto max-w-7xl px-6 py-24 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-text-primary md:text-5xl">
-            Simple, Transparent Pricing
+      <section className="bg-black">
+        <div className="mx-auto max-w-6xl px-6 py-24 text-center">
+          <p className="mb-4 text-xs font-medium uppercase tracking-widest text-white/25">
+            Plans
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+            Simple, transparent pricing
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-text-secondary">
-            Start free with no credit card required. Upgrade when you need
+          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-white/60">
+            Start free — no credit card required. Upgrade when you need
             unlimited data, AI analysis, and strategy automation.
           </p>
         </div>
       </section>
 
       {/* Pricing Cards */}
-      <section className="border-t border-border-subtle bg-bg-card">
-        <div className="mx-auto max-w-7xl px-6 py-24">
-          <div className="grid gap-8 md:grid-cols-3">
+      <section className="border-t border-white/[0.06] bg-black">
+        <div className="mx-auto max-w-6xl px-6 py-24">
+          <div className="grid gap-6 md:grid-cols-3">
             {tiers.map((tier, i) => (
               <div
                 key={tier.name}
-                className={`animate-fade-in stagger-${i + 1} relative flex flex-col rounded-xl border p-8 ${
+                className={`animate-fade-in stagger-${i + 1} relative flex flex-col rounded-2xl border p-8 ${
                   tier.highlight
-                    ? "gradient-border-gold border-accent-gold bg-bg-base shadow-lg"
-                    : "border-border-subtle bg-bg-base"
+                    ? "border-white/20 bg-white/[0.04]"
+                    : "border-white/[0.08] bg-white/[0.02]"
                 }`}
               >
                 {tier.badge && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="rounded-full bg-accent-gold px-4 py-1 text-xs font-semibold text-bg-base">
+                    <span className="rounded-full bg-white px-4 py-1 text-xs font-semibold text-black">
                       {tier.badge}
                     </span>
                   </div>
@@ -141,20 +144,20 @@ export default function PricingPage() {
 
                 {/* Tier Header */}
                 <div className="mb-8">
-                  <h2 className="text-lg font-semibold text-text-primary">
+                  <h2 className="text-lg font-semibold text-white">
                     {tier.name}
                   </h2>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="font-mono text-4xl font-bold text-text-primary">
+                  <div className="mt-3 flex items-baseline gap-1.5">
+                    <span className="text-5xl font-semibold text-white">
                       {tier.price}
                     </span>
                     {tier.period && (
-                      <span className="text-sm text-text-muted">
+                      <span className="text-sm text-white/40">
                         {tier.period}
                       </span>
                     )}
                   </div>
-                  <p className="mt-3 text-sm text-text-secondary">
+                  <p className="mt-3 text-[15px] leading-relaxed text-white/60">
                     {tier.description}
                   </p>
                 </div>
@@ -164,16 +167,16 @@ export default function PricingPage() {
                   {tier.features.map((feature) => (
                     <li
                       key={feature.label}
-                      className="flex items-center justify-between border-b border-border-subtle pb-4 last:border-0 last:pb-0"
+                      className="flex items-center justify-between border-b border-white/[0.06] pb-4 last:border-0 last:pb-0"
                     >
-                      <span className="text-sm text-text-secondary">
+                      <span className="text-[15px] text-white/60">
                         {feature.label}
                       </span>
                       <span
-                        className={`font-mono text-sm font-medium ${
+                        className={`font-mono text-sm font-medium tabular-nums ${
                           feature.value === "No"
-                            ? "text-text-muted"
-                            : "text-text-primary"
+                            ? "text-white/25"
+                            : "text-white"
                         }`}
                       >
                         {feature.value}
@@ -185,10 +188,10 @@ export default function PricingPage() {
                 {/* CTA */}
                 <Link
                   href={tier.ctaHref}
-                  className={`btn-premium block rounded-lg px-6 py-3 text-center text-sm font-semibold transition-colors ${
+                  className={`block rounded-full px-6 py-3 text-center text-[15px] font-medium transition-all active:scale-[0.98] ${
                     tier.highlight
-                      ? "bg-accent-gold text-bg-base hover:bg-accent-gold-hover"
-                      : "border border-border-default text-text-primary hover:bg-bg-elevated"
+                      ? "bg-white text-black hover:bg-white/90"
+                      : "border border-white/15 text-white hover:border-white/30 hover:bg-white/[0.04]"
                   }`}
                 >
                   {tier.cta}
@@ -197,13 +200,13 @@ export default function PricingPage() {
             ))}
           </div>
 
-          {/* FAQ / Note */}
-          <p className="mt-12 text-center text-sm text-text-muted">
+          {/* Note */}
+          <p className="mt-12 text-center text-[15px] text-white/40">
             All plans include REST API access, WebSocket streams, and full
             OpenAPI documentation.{" "}
             <Link
               href="/docs"
-              className="text-accent-gold hover:text-accent-gold-hover"
+              className="text-white/60 transition-colors hover:text-white"
             >
               Read the docs →
             </Link>

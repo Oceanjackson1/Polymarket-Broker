@@ -34,23 +34,25 @@ export default function AboutPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-bg-base">
-        <div className="mx-auto max-w-7xl px-6 py-24">
+      <section className="bg-black">
+        <div className="mx-auto max-w-6xl px-6 py-24">
           <div className="max-w-3xl">
-            <h1 className="text-4xl font-bold tracking-tight text-text-primary md:text-5xl">
-              About Polymarket Broker
-            </h1>
-            <p className="mt-6 text-lg leading-relaxed text-text-secondary">
-              Polymarket Broker is an institutional-grade prediction market
-              terminal built for traders who demand an edge. We aggregate
-              proprietary data sources, apply AI-driven analysis, and expose
-              everything through a clean REST API — so quantitative traders,
-              funds, and serious retail participants can operate at professional
-              standards.
+            <p className="mb-4 text-xs font-medium uppercase tracking-widest text-white/25">
+              About
             </p>
-            <p className="mt-4 text-lg leading-relaxed text-text-secondary">
-              Polymarket is the world's largest prediction market exchange. We
-              are the infrastructure layer on top of it: the data feeds,
+            <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+              Polymarket Broker
+            </h1>
+            <p className="mt-6 text-lg leading-relaxed text-white/60">
+              An institutional-grade prediction market terminal built for
+              traders who demand an edge. We aggregate proprietary data sources,
+              apply AI-driven analysis, and expose everything through a clean
+              REST API — so quantitative traders, funds, and serious retail
+              participants can operate at professional standards.
+            </p>
+            <p className="mt-4 text-lg leading-relaxed text-white/60">
+              Polymarket is the world&apos;s largest prediction market exchange.
+              We are the infrastructure layer on top of it: the data feeds,
               analytics, and execution tooling that institutions need but the
               exchange itself does not offer.
             </p>
@@ -59,21 +61,24 @@ export default function AboutPage() {
       </section>
 
       {/* Pillars */}
-      <section className="border-t border-border-subtle bg-bg-card">
-        <div className="mx-auto max-w-7xl px-6 py-24">
-          <h2 className="mb-12 text-2xl font-bold text-text-primary">
+      <section className="border-t border-white/[0.06] bg-black">
+        <div className="mx-auto max-w-6xl px-6 py-24">
+          <p className="mb-4 text-xs font-medium uppercase tracking-widest text-white/25">
             What We Build
+          </p>
+          <h2 className="mb-12 text-3xl font-semibold tracking-tight text-white md:text-5xl">
+            Four pillars
           </h2>
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             {pillars.map((pillar) => (
               <div
                 key={pillar.title}
-                className="rounded-xl border border-border-subtle bg-bg-base p-8"
+                className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8"
               >
-                <h3 className="mb-3 text-base font-semibold text-accent-gold">
+                <h3 className="mb-3 text-xl font-semibold text-white">
                   {pillar.title}
                 </h3>
-                <p className="text-sm leading-relaxed text-text-secondary">
+                <p className="text-[15px] leading-relaxed text-white/60">
                   {pillar.description}
                 </p>
               </div>
@@ -82,15 +87,18 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Principles */}
-      <section className="border-t border-border-subtle bg-bg-base">
-        <div className="mx-auto max-w-7xl px-6 py-24">
+      {/* Principles + Contact */}
+      <section className="border-t border-white/[0.06] bg-black">
+        <div className="mx-auto max-w-6xl px-6 py-24">
           <div className="grid gap-16 md:grid-cols-2">
             <div>
-              <h2 className="mb-6 text-2xl font-bold text-text-primary">
-                Design Principles
+              <p className="mb-4 text-xs font-medium uppercase tracking-widest text-white/25">
+                Principles
+              </p>
+              <h2 className="mb-8 text-3xl font-semibold tracking-tight text-white">
+                How we build
               </h2>
-              <ul className="space-y-5">
+              <ul className="space-y-6">
                 {[
                   {
                     title: "API-First",
@@ -110,12 +118,12 @@ export default function AboutPage() {
                   },
                 ].map((item) => (
                   <li key={item.title} className="flex gap-4">
-                    <span className="mt-0.5 text-accent-gold">✓</span>
+                    <span className="mt-0.5 text-white/40">✓</span>
                     <div>
-                      <p className="text-sm font-semibold text-text-primary">
+                      <p className="text-[15px] font-semibold text-white">
                         {item.title}
                       </p>
-                      <p className="mt-1 text-sm text-text-secondary">
+                      <p className="mt-1 text-[15px] leading-relaxed text-white/60">
                         {item.body}
                       </p>
                     </div>
@@ -125,24 +133,27 @@ export default function AboutPage() {
             </div>
 
             <div>
-              <h2 className="mb-6 text-2xl font-bold text-text-primary">
-                Get In Touch
-              </h2>
-              <p className="text-sm leading-relaxed text-text-secondary">
-                We're a small, focused team. If you're an institution that needs
-                custom data arrangements, white-label access, or co-location,
-                reach out directly.
+              <p className="mb-4 text-xs font-medium uppercase tracking-widest text-white/25">
+                Contact
               </p>
-              <div className="mt-8 space-y-4">
+              <h2 className="mb-6 text-3xl font-semibold tracking-tight text-white">
+                Get in touch
+              </h2>
+              <p className="text-[15px] leading-relaxed text-white/60">
+                We&apos;re a small, focused team. If you&apos;re an institution
+                that needs custom data arrangements, white-label access, or
+                co-location, reach out directly.
+              </p>
+              <div className="mt-10 space-y-4">
                 <Link
                   href="/docs"
-                  className="block rounded-lg border border-border-default px-6 py-3 text-center text-sm font-semibold text-text-primary transition-colors hover:bg-bg-elevated"
+                  className="block rounded-full border border-white/15 px-6 py-3 text-center text-[15px] font-medium text-white transition-all hover:border-white/30 hover:bg-white/[0.04]"
                 >
                   Read the API Docs
                 </Link>
                 <Link
                   href="/pricing"
-                  className="block rounded-lg bg-accent-gold px-6 py-3 text-center text-sm font-semibold text-bg-base transition-colors hover:bg-accent-gold-hover"
+                  className="block rounded-full bg-white px-6 py-3 text-center text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
                 >
                   View Pricing Plans
                 </Link>

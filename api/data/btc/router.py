@@ -7,7 +7,8 @@ from sqlalchemy import select, desc, func, and_
 from db.postgres import get_session
 from api.deps import get_current_user_from_api_key, require_scope
 from api.data.btc.models import BtcSnapshot
-from api.data.btc.schemas import BtcSnapshotResponse, BtcTimeframeResponse, BtcHistoryResponse
+from api.data.btc.schemas import BtcSnapshotResponse, BtcTimeframeResponse, BtcHistoryResponse, BtcFusionResponse
+from api.data.crypto.models import CryptoDerivatives
 from core.polymarket.clob_client import ClobClient
 
 router = APIRouter(prefix="/data/btc", tags=["data-btc"])
@@ -135,4 +136,61 @@ async def get_btc_history(
     return BtcHistoryResponse(
         data=[BtcSnapshotResponse.model_validate(s) for s in snaps],
         pagination={"limit": limit, "count": len(snaps)},
+    )
+
+
+@router.get("/fusion/{timeframe}", response_model=BtcFusionResponse)
+async def get_btc_fusion(
+    timeframe: str,
+    auth: dict = Depends(get_current_user_from_api_key),
+    db: AsyncSession = Depends(get_session),
+):
+    """Polymarket BTC prediction + CoinGlass derivatives in one view."""
+    require_scope(auth, "data:read")
+    if timeframe not in VALID_TIMEFRAMES:
+        raise HTTPException(400, detail=f"INVALID_TIMEFRAME: must be one of {sorted(VALID_TIMEFRAMES)}")
+
+    snap = await db.scalar(
+        select(BtcSnapshot)
+        .where(BtcSnapshot.timeframe == timeframe)
+        .order_by(desc(BtcSnapshot.recorded_at))
+    )
+    if not snap:
+        raise HTTPException(404, detail="NO_BTC_SNAPSHOT_DATA")
+
+    deriv = await db.scalar(
+        select(CryptoDerivatives)
+        .where(CryptoDerivatives.symbol == "BTC")
+        .order_by(desc(CryptoDerivatives.recorded_at))
+    )
+
+    derivatives_data = {}
+    if deriv:
+        derivatives_data = {
+            "funding_rate_avg": deriv.funding_rate_avg,
+            "oi_total_usd": deriv.oi_total_usd,
+            "oi_change_pct_1h": deriv.oi_change_pct_1h,
+            "oi_change_pct_4h": deriv.oi_change_pct_4h,
+            "taker_buy_ratio": deriv.taker_buy_ratio,
+            "taker_sell_ratio": deriv.taker_sell_ratio,
+            "liq_long_1h_usd": deriv.liq_long_1h_usd,
+            "liq_short_1h_usd": deriv.liq_short_1h_usd,
+            "fear_greed_index": deriv.fear_greed_index,
+        }
+
+    stale = _is_stale(snap.recorded_at)
+    if deriv:
+        stale = stale or _is_stale(deriv.recorded_at)
+
+    return BtcFusionResponse(
+        timeframe=timeframe,
+        polymarket={
+            "up_prob": snap.prediction_prob,
+            "volume": snap.volume,
+            "market_id": snap.market_id,
+        },
+        spot={"price_usd": snap.price_usd},
+        derivatives=derivatives_data,
+        stale=stale,
+        recorded_at=snap.recorded_at,
     )

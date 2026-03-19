@@ -3,11 +3,11 @@ import Link from "next/link";
 import { HeroSection, ExclusiveFeaturesGrid } from "./_components/hero-section";
 
 export const metadata: Metadata = {
-  title: "Polymarket Broker — Institutional Prediction Market Terminal",
+  title: "Polydesk — Institutional Prediction Market Terminal",
   description:
     "Trade prediction markets with institutional-grade tools. Real-time NBA fusion data, 145-sport orderbooks, BTC multi-timeframe predictions, and AI pricing-bias analysis.",
   openGraph: {
-    title: "Polymarket Broker — Institutional Prediction Market Terminal",
+    title: "Polydesk — Institutional Prediction Market Terminal",
     description:
       "The only broker providing NBA×Polymarket real-time fusion data, AI pricing-bias analysis, and convergence arbitrage execution.",
   },
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Polymarket Broker",
+  name: "Polydesk",
   applicationCategory: "FinanceApplication",
   operatingSystem: "Web",
   description: "Institutional-grade prediction market trading platform.",

@@ -17,11 +17,8 @@ export default function MarketingLayout({
       {/* Navigation */}
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
         <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-[11px] font-bold text-black">
-              PM
-            </div>
-            <span className="text-[15px] font-semibold text-white">Broker</span>
+          <Link href="/" className="flex items-center">
+            <span className="text-[17px] font-semibold tracking-tight text-white">Polydesk</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -131,7 +128,7 @@ export default function MarketingLayout({
 
           <div className="mt-16 flex items-center justify-between border-t border-white/[0.06] pt-8">
             <p className="text-xs text-white/20">
-              &copy; {new Date().getFullYear()} Polymarket Broker
+              &copy; {new Date().getFullYear()} Polydesk
             </p>
             <div className="flex items-center gap-6">
               <Link href="/feed.xml" className="text-xs text-white/20 hover:text-white/40">RSS</Link>

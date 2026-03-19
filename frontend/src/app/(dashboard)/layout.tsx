@@ -34,11 +34,8 @@ export default function DashboardLayout({
       <aside className="flex w-56 flex-col border-r border-border-subtle bg-bg-base">
         {/* Logo */}
         <div className="flex h-14 items-center border-b border-border-subtle px-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="text-lg font-bold text-accent-gold">PM</span>
-            <span className="text-sm font-semibold text-text-primary">
-              Broker
-            </span>
+          <Link href="/dashboard" className="flex items-center">
+            <span className="text-[17px] font-semibold tracking-tight text-white">Polydesk</span>
           </Link>
         </div>
 

@@ -18,8 +18,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Polymarket Broker — Institutional Prediction Market Terminal",
-    template: "%s | Polymarket Broker",
+    default: "Polydesk — Institutional Prediction Market Terminal",
+    template: "%s | Polydesk",
   },
   description:
     "机构级预测市场交易平台。提供 NBA×Polymarket 实时融合数据、145 项体育历史订单簿、BTC 多时间框架预测和 AI 定价偏差分析。",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "Polymarket Broker",
+    siteName: "Polydesk",
   },
   twitter: {
     card: "summary_large_image",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "Polymarket Broker",
+  name: "Polydesk",
   description:
     "Institutional-grade prediction market trading platform with real-time NBA fusion data, 145-sport historical orderbooks, BTC multi-timeframe predictions, and AI pricing-bias analysis.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://broker.polymarket.com",

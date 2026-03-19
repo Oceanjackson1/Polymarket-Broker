@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "About — Polymarket Broker",
+  title: "About — Polydesk",
   description:
-    "Polymarket Broker is an institutional-grade prediction market terminal providing exclusive data feeds, AI-powered analysis, and automated convergence arbitrage strategies.",
+    "Polydesk is an institutional-grade prediction market terminal providing exclusive data feeds, AI-powered analysis, and automated convergence arbitrage strategies.",
 };
 
 const pillars = [
@@ -41,7 +41,7 @@ export default function AboutPage() {
               About
             </p>
             <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
-              Polymarket Broker
+              Polydesk
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-white/60">
               An institutional-grade prediction market terminal built for

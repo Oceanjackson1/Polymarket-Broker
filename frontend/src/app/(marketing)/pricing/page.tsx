@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: "Polymarket Broker",
+  name: "Polydesk",
   description:
     "Institutional-grade prediction market trading platform with exclusive data feeds and AI analysis.",
   offers: [

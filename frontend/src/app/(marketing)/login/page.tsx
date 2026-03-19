@@ -76,7 +76,7 @@ export default function LoginPage() {
         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-semibold text-white">
-              Sign in to Polymarket Broker
+              Sign in to Polydesk
             </h1>
             <p className="mt-2 text-[15px] text-white/60">
               Don&apos;t have an account?{" "}

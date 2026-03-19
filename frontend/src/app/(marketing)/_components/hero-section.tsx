@@ -14,7 +14,7 @@ function DashboardPreview() {
           <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
           <div className="h-3 w-3 rounded-full bg-[#28c840]" />
         </div>
-        <span className="ml-3 text-xs text-white/30">Polymarket Broker</span>
+        <span className="ml-3 text-xs text-white/30">Polydesk</span>
       </div>
       <div className="p-5">
         {/* Stats */}

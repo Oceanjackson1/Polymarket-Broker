@@ -1,7 +1,7 @@
 export const dynamic = "force-static";
 
 export async function GET() {
-  const content = `# Polymarket Broker
+  const content = `# Polydesk
 
 > Institutional-grade prediction market trading platform. Provides real-time
 > NBA score × Polymarket odds fusion data, 145-sport historical orderbooks,
@@ -11,7 +11,7 @@ export async function GET() {
 ## Core Resources
 
 - [Markets Overview](/markets): Browse all prediction markets with real-time odds across politics, sports, crypto, and more
-- [API Documentation](/docs): Complete REST API reference for developers building on Polymarket Broker
+- [API Documentation](/docs): Complete REST API reference for developers building on Polydesk
 - [API Quick Start](/docs/getting-started/quickstart): 5-minute integration guide
 - [Authentication Guide](/docs/getting-started/authentication): API Key and Wallet auth setup
 - [Pricing](/pricing): Subscription tiers — Free, Pro ($99/mo), Enterprise

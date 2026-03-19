@@ -1,4 +1,4 @@
-// ─── Polymarket Broker — Typed API Client ────────────────────────────────────
+// ─── Polydesk — Typed API Client ────────────────────────────────────────────
 
 const API_BASE = "/api/v1";
 

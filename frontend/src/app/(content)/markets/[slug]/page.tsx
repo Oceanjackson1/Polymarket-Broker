@@ -54,7 +54,7 @@ const DEFAULT_DETAIL = {
   resolution: "Resolves based on publicly verifiable data at end date.",
   endDate: "TBD",
   category: "General",
-  description: "A prediction market tracked on the Polymarket Broker platform.",
+  description: "A prediction market tracked on the Polydesk platform.",
   priceHistory: [0.3, 0.35, 0.32, 0.38, 0.4, 0.42, 0.41, 0.43],
 };
 
@@ -77,7 +77,7 @@ export async function generateMetadata({
 
   return {
     title: `${market.title} — Prediction Market Odds`,
-    description: `Current odds for "${market.title}": ${market.probability}% ${market.yesLabel}. Volume: ${market.volume}. Trade now on Polymarket Broker.`,
+    description: `Current odds for "${market.title}": ${market.probability}% ${market.yesLabel}. Volume: ${market.volume}. Trade now on Polydesk.`,
     openGraph: {
       title: `${market.title} — Prediction Market Odds`,
       description: `${market.probability}% ${market.yesLabel} · Volume ${market.volume}`,
@@ -134,7 +134,7 @@ export default async function MarketDetailPage({
     },
     publisher: {
       "@type": "Organization",
-      name: "Polymarket Broker",
+      name: "Polydesk",
       url: "https://broker.polymarket.com",
     },
   };

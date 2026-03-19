@@ -32,25 +32,12 @@ services:
       DATABASE_URL: postgresql+asyncpg://broker:${POSTGRES_PASSWORD:-broker_secure_pwd}@postgres:5432/broker
       REDIS_URL: redis://redis:6379/0
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
-
-  # --- Nginx reverse proxy (SSL termination) ---
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./deploy/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - api
     restart: unless-stopped
 
 volumes:

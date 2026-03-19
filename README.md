@@ -5,26 +5,28 @@
 ## 系统架构
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      FastAPI 应用                        │
-│                                                         │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐  │
-│  │ 认证模块  │ │ 市场模块  │ │ 订单模块  │ │ 投资组合  │  │
-│  └──────────┘ └──────────┘ └──────────┘ └───────────┘  │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐                │
-│  │体育数据API│ │ NBA数据API│ │ BTC数据API│                │
-│  └──────────┘ └──────────┘ └──────────┘                │
-├─────────────────────────────────────────────────────────┤
-│                    数据采集管道                           │
-│  ┌──────────────┐ ┌────────────┐ ┌────────────────┐    │
-│  │SportsCollector│ │NbaCollector│ │ BtcCollector   │    │
-│  │ (每5分钟)     │ │ (每30秒)   │ │ (每30秒)       │    │
-│  └──────────────┘ └────────────┘ └────────────────┘    │
-├─────────────────────────────────────────────────────────┤
-│  PostgreSQL (asyncpg)  │  Redis (限流/缓存)              │
-└─────────────────────────────────────────────────────────┘
-         ↕                    ↕                  ↕
-   Polymarket CLOB     Polymarket Gamma     ESPN / CoinGecko
+┌───────────────────────────────────────────────────────────────────┐
+│                         FastAPI 应用                               │
+│                                                                   │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐         │
+│  │ 认证   │ │ 市场   │ │ 订单   │ │ 组合   │ │ 分析   │  路由层  │
+│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘         │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────────┐ ┌───────────┐ │
+│  │ 体育   │ │ NBA    │ │ BTC    │ │ Dome数据   │ │ 实时订单簿 │ │
+│  └────────┘ └────────┘ └────────┘ └────────────┘ └───────────┘ │
+├───────────────────────────────────────────────────────────────────┤
+│                       数据采集管道                                  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────────┐│
+│  │Sports    │ │NBA       │ │BTC       │ │Dome: Market/Kalshi/  ││
+│  │Collector │ │Collector │ │Collector │ │WalletTracker         ││
+│  │ 5min     │ │ 30s      │ │ 30s      │ │ 60s/120s/300s        ││
+│  └──────────┘ └──────────┘ └──────────┘ └──────────────────────┘│
+├───────────────────────────────────────────────────────────────────┤
+│  PostgreSQL (asyncpg)  │  Redis (限流/缓存)                       │
+└───────────────────────────────────────────────────────────────────┘
+    ↕            ↕              ↕              ↕              ↕
+ Polymarket   Polymarket    ESPN /      Dome API         腾讯云服务器
+   CLOB        Gamma       CoinGecko   (8-Key Pool)    (Binance+Poly OB)
 ```
 
 ## 核心功能
@@ -55,17 +57,36 @@
 - 逐笔盈亏分析
 
 ### 数据采集管道
-- **体育数据采集器**：每 5 分钟从 Polymarket Gamma 拉取体育赛事市场，PostgreSQL upsert
-- **NBA 数据采集器**：每 30 秒融合 ESPN 实时比分 + Polymarket 赔率，计算偏差信号（bias signal）
-- **BTC 数据采集器**：每 30 秒从 CoinGecko 获取价格 + Polymarket 预测市场概率，追加写入
 
-### 数据 API（12 个端点）
+| 采集器 | 间隔 | 数据源 | 说明 |
+|--------|------|--------|------|
+| SportsCollector | 5min | Gamma + Dome (Kalshi 关联) | 体育赛事市场 + 跨平台匹配 |
+| NbaCollector | 30s | ESPN + Dome/Gamma | 实时比分 + 市场赔率 + 偏差信号 |
+| BtcCollector | 30s | Dome/Binance → CoinGecko | BTC 价格 + 预测概率 |
+| DomeMarketCollector | 60s | Dome API | 增强市场快照（价格+K线+深度） |
+| KalshiCollector | 120s | Dome API | Polymarket↔Kalshi 跨平台价差 |
+| WalletTracker | 300s | Dome API | 聪明钱持仓 + PnL 监控 |
+
+### Dome API 集成（8-Key 高并发）
+- **8 个 API Key 轮转池**，每秒 600+ 请求吞吐
+- 自动 429 限流检测 + 10 秒冷却跳过
+- WebSocket 实时订单流（自动重连 + 订阅恢复）
+- 全部 Collector 和 Markets Router 已接入 Dome 为主数据源，原有 API 作为 fallback
+
+### 实时订单簿（腾讯云服务器）
+- **Binance BTCUSDT**：现货 + 期货深度数据，100万+ 条记录（TimescaleDB）
+- **Polymarket BTC Up/Down**：5分钟窗口的订单簿快照、价格变动、成交记录（CSV）
+- 通过 HTTP API + SSH 代理暴露给 Broker
+
+### 数据 API
 
 | 路由 | 端点数 | 说明 |
 |------|--------|------|
 | `/api/v1/data/sports/` | 4 | 体育分类、赛事列表、订单簿代理、已结算查询 |
-| `/api/v1/data/nba/` | 4 | 比赛列表、详情、ESPN+Polymarket 融合视图、订单簿 |
-| `/api/v1/data/btc/` | 4 | 全时间框架预测、单时间框架详情、链上交易代理、历史查询 |
+| `/api/v1/data/nba/` | 4 | 比赛列表、详情、融合视图、订单簿 |
+| `/api/v1/data/btc/` | 4 | 预测、时间框架、链上交易、历史 |
+| `/api/v1/data/dome/` | 7 | 市场快照、K线、套利价差、钱包PnL、加密价格 |
+| `/api/v1/data/live-orderbook/` | 10 | Binance深度、Polymarket BTC Up/Down 订单簿 |
 
 所有数据端点包含 **陈旧检测**（staleness envelope）：返回 `stale` 标记和 `data_updated_at` 时间戳。
 
@@ -240,6 +261,42 @@ ENV_FILE=.env.test pytest tests/ --cov=. --cov-report=term-missing
 | GET | `/onchain` | 链上交易代理 |
 | GET | `/history` | 历史快照查询 |
 
+### 数据 — Dome 增强 `/api/v1/data/dome/`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/markets` | 最新市场快照（价格、K线、深度） |
+| GET | `/markets/{slug}/candlesticks` | K线历史数据（OHLC） |
+| GET | `/arbitrage/spreads` | Polymarket↔Kalshi 跨平台价差 |
+| GET | `/arbitrage/opportunities` | 高价差套利机会（可配阈值） |
+| GET | `/wallets/{addr}/positions` | 追踪钱包持仓历史 |
+| GET | `/wallets/{addr}/pnl` | 追踪钱包盈亏曲线 |
+| GET | `/crypto/{symbol}/price` | 实时加密货币价格（Binance/Chainlink） |
+
+### 数据 — 实时订单簿 `/api/v1/data/live-orderbook/`
+
+**Binance BTCUSDT（现货+期货）**
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/binance/health` | 采集器健康状态 |
+| GET | `/binance/collector-health` | 按市场/交易对的采集状态 |
+| GET | `/binance/latest` | 最新聚合摘要（best bid/ask, spread, depth） |
+| GET | `/binance/full-snapshot` | 最新全量深度快照（所有价位） |
+| GET | `/binance/snapshots` | 历史全量快照（时间范围筛选） |
+| GET | `/binance/events` | 原始 L2 差量事件 |
+| GET | `/binance/curated/{dataset}` | 策展数据集（book_snapshots 等） |
+| GET | `/binance/meta/markets` | 可用市场元数据 |
+
+**Polymarket BTC Up/Down**
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/polymarket/windows` | 最近录制的时间窗口列表 |
+| GET | `/polymarket/{window}/book-snapshots` | 订单簿深度快照 |
+| GET | `/polymarket/{window}/price-changes` | Best bid/ask 价格变动事件 |
+| GET | `/polymarket/{window}/trades` | 成交记录 |
+
 ## 项目结构
 
 ```
@@ -249,28 +306,45 @@ Polymarket-Broker/
 │   ├── data/                 # 数据查询端点
 │   │   ├── sports/           # 体育数据 API
 │   │   ├── nba/              # NBA 数据 API
-│   │   └── btc/              # BTC 数据 API
-│   ├── markets/              # 市场查询端点
+│   │   ├── btc/              # BTC 数据 API
+│   │   ├── dome/             # Dome 增强数据（K线、套利、钱包）
+│   │   └── live_orderbook/   # 实时订单簿（Binance + Polymarket）
+│   ├── markets/              # 市场查询端点（Dome fallback）
 │   ├── orders/               # 订单管理端点
 │   ├── portfolio/            # 投资组合端点
+│   ├── analysis/             # AI 分析端点
+│   ├── strategies/           # 策略端点
+│   ├── webhooks/             # Webhook 通知
+│   ├── developer/            # 开发者工具
+│   ├── ws/                   # WebSocket 端点
 │   ├── middleware/           # 错误处理、限流中间件
 │   ├── deps.py               # 公共依赖（认证、作用域校验）
 │   └── main.py               # FastAPI 应用入口 + 生命周期管理
 ├── core/                     # 核心业务逻辑
 │   ├── polymarket/           # Polymarket 客户端（CLOB + Gamma）
+│   ├── dome/                 # Dome API 集成
+│   │   ├── key_pool.py       # 8-Key 轮转池（429 冷却）
+│   │   ├── client.py         # REST 客户端（25+ 端点）
+│   │   ├── websocket.py      # WebSocket 实时流
+│   │   └── factory.py        # 组件工厂
+│   ├── live_orderbook/       # 远程订单簿客户端
+│   │   └── remote_client.py  # Binance HTTP + Polymarket SSH
 │   ├── config.py             # 配置管理（Pydantic Settings）
 │   ├── fee_engine.py         # 手续费引擎
 │   ├── risk_guard.py         # 风控模块
 │   └── security.py           # JWT / Fernet / HMAC 工具
 ├── data_pipeline/            # 后台数据采集
 │   ├── base.py               # BaseCollector 基类（轮询循环）
-│   ├── sports_collector.py   # 体育市场采集器
-│   ├── nba_collector.py      # NBA 比分+赔率融合采集器
-│   └── btc_collector.py      # BTC 价格+预测采集器
+│   ├── sports_collector.py   # 体育市场 + Kalshi 关联
+│   ├── nba_collector.py      # NBA 比分+赔率（Dome优先）
+│   ├── btc_collector.py      # BTC 价格（Dome/Binance优先）
+│   ├── dome_market_collector.py  # Dome 市场快照（价格+K线+深度）
+│   ├── kalshi_collector.py   # 跨平台价差检测
+│   └── wallet_tracker.py     # 聪明钱钱包监控
 ├── db/                       # 数据库连接工厂
 │   ├── postgres.py           # SQLAlchemy 异步引擎
 │   └── redis_client.py       # Redis 连接池
-├── tests/                    # 测试套件（106 个测试）
+├── tests/                    # 测试套件（231 个测试）
 ├── docker-compose.yml        # Docker 编排
 ├── Dockerfile                # 容器构建
 ├── requirements.txt          # Python 依赖

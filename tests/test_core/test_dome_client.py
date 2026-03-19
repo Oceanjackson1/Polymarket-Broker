@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 from core.dome.key_pool import DomeKeyPool
-from core.dome.client import DomeClient
+from core.dome.client import DomeClient, extract_list
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -99,3 +99,33 @@ async def test_429_retry(dome):
     result = await dome._request("GET", "/test")
     assert result == {"ok": True}
     assert call_count == 2
+
+
+# ── extract_list tests ───────────────────────────────────────────
+
+def test_extract_list_markets_key():
+    assert extract_list({"markets": [{"slug": "a"}], "pagination": {}}) == [{"slug": "a"}]
+
+
+def test_extract_list_events_key():
+    assert extract_list({"events": [{"id": 1}]}) == [{"id": 1}]
+
+
+def test_extract_list_data_key():
+    assert extract_list({"data": [1, 2, 3]}) == [1, 2, 3]
+
+
+def test_extract_list_prices_key():
+    assert extract_list({"prices": [{"value": 100}]}) == [{"value": 100}]
+
+
+def test_extract_list_raw_list():
+    assert extract_list([1, 2]) == [1, 2]
+
+
+def test_extract_list_empty_dict():
+    assert extract_list({}) == []
+
+
+def test_extract_list_non_dict():
+    assert extract_list("string") == []

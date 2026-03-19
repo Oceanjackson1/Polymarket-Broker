@@ -6,9 +6,40 @@ from db.postgres import AsyncSessionLocal
 from sqlalchemy import select, desc
 from api.data.nba.models import NbaGame
 from api.data.btc.models import BtcSnapshot
+from core.polymarket.clob_client import ClobClient
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+_clob = ClobClient()
+
+
+@router.websocket("/ws/markets/{token_id}")
+async def market_orderbook_live(websocket: WebSocket, token_id: str):
+    """Stream real-time orderbook for any Polymarket market every 3s."""
+    await websocket.accept()
+    try:
+        while True:
+            try:
+                book = await _clob.get_orderbook(token_id=token_id)
+                mid = await _clob.get_midpoint(token_id=token_id)
+                await websocket.send_json({
+                    "type": "orderbook_update",
+                    "token_id": token_id,
+                    "bids": book.get("bids", []),
+                    "asks": book.get("asks", []),
+                    "midpoint": mid.get("mid", None),
+                })
+            except Exception as e:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": f"Upstream error: {e}",
+                })
+            await asyncio.sleep(3)
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket disconnected: markets/{token_id}")
+    except Exception as e:
+        logger.error(f"WebSocket error markets/{token_id}: {e}")
 
 
 @router.websocket("/ws/nba/{game_id}/live")

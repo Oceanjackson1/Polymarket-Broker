@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.dome.client import DomeClient
+from core.dome.client import DomeClient, extract_list
 from data_pipeline.base import BaseCollector
 from api.data.dome.models import MarketSnapshot
 
@@ -28,7 +28,7 @@ class DomeMarketCollector(BaseCollector):
 
         # 1. Fetch high-volume open markets.
         resp = await self._dome.get_markets(status="open", min_volume=10000, limit=50)
-        markets = resp.get("data", []) if isinstance(resp, dict) else resp
+        markets = extract_list(resp)
 
         for m in markets:
             slug = m.get("market_slug", "")
@@ -52,7 +52,7 @@ class DomeMarketCollector(BaseCollector):
                 candle_resp = await self._dome.get_candlesticks(
                     condition_id, start_time=one_hour_ago, end_time=now, interval=60,
                 )
-                candles = candle_resp.get("data", []) if isinstance(candle_resp, dict) else candle_resp
+                candles = extract_list(candle_resp)
                 if candles:
                     last = candles[-1]
                     ohlc = {
@@ -68,7 +68,7 @@ class DomeMarketCollector(BaseCollector):
             bid_depth = ask_depth = None
             try:
                 ob_resp = await self._dome.get_orderbook_snapshots(token_id, limit=1)
-                obs = ob_resp.get("data", []) if isinstance(ob_resp, dict) else ob_resp
+                obs = extract_list(ob_resp)
                 if obs:
                     latest = obs[0]
                     bids = latest.get("bids", [])

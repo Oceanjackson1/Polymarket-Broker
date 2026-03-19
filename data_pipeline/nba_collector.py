@@ -1,5 +1,13 @@
 # data_pipeline/nba_collector.py
+"""NBA game data collector.
+
+ESPN provides live game scores. Market odds come from:
+  Primary: Dome API (if available)
+  Fallback: Polymarket Gamma API
+"""
+import logging
 from datetime import datetime, UTC
+
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -7,8 +15,10 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from data_pipeline.base import BaseCollector
 from api.data.nba.models import NbaGame
 from core.polymarket.gamma_client import GammaClient
-
+from core.dome.client import DomeClient, extract_list
 from core.config import get_settings as _get_settings
+
+logger = logging.getLogger(__name__)
 
 ESPN_SCOREBOARD_URL = (
     f"{_get_settings().espn_api_base}/apis/site/v2/sports/basketball/nba/scoreboard"
@@ -43,7 +53,6 @@ def estimate_win_prob(
 
     # As game progresses, score matters more
     # Coefficient 0.80: calibrated so a 20-point Q4 lead yields ~89% win probability.
-    # The original plan value of 0.45 was too conservative (would give ~67% in same scenario).
     prob = 0.5 + score_component * time_fraction * 0.80
     return max(0.05, min(0.95, prob))
 
@@ -54,7 +63,6 @@ def compute_bias(
     """Returns (direction, magnitude_bps). Direction is from home team's perspective."""
     if statistical_prob is None or polymarket_prob is None:
         return "NEUTRAL", 0
-    # round() used instead of int() to avoid IEEE 754 truncation (e.g. 0.75-0.55 = 0.1999... * 10000 = 1999)
     delta_bps = round(abs(statistical_prob - polymarket_prob) * 10000)
     if delta_bps < BIAS_THRESHOLD_BPS:
         return "NEUTRAL", delta_bps
@@ -64,13 +72,13 @@ def compute_bias(
 
 
 def _find_market_for_game(home: str, away: str, markets: list) -> dict | None:
-    """Fuzzy match: find a Polymarket market whose question contains both team last names."""
+    """Fuzzy match: find a Polymarket market whose question/title contains both team last names."""
     if not home or not away:
         return None
     home_last = home.split()[-1].lower()
     away_last = away.split()[-1].lower()
     for m in markets:
-        q = m.get("question", "").lower()
+        q = (m.get("question", "") or m.get("title", "")).lower()
         if home_last in q and away_last in q:
             return m
     return None
@@ -90,11 +98,24 @@ class NbaCollector(BaseCollector):
     name = "nba_collector"
     interval_seconds = 30
 
-    def __init__(self):
+    def __init__(self, dome_client: DomeClient | None = None):
+        self._dome = dome_client
         self._gamma = GammaClient()
 
     async def teardown(self) -> None:
         await self._gamma.close()
+
+    async def _fetch_nba_markets(self) -> list:
+        """Fetch NBA markets. Primary: Dome, fallback: Gamma."""
+        if self._dome:
+            try:
+                resp = await self._dome.get_markets(tags=["nba"], status="open", limit=50)
+                markets = extract_list(resp)
+                if markets:
+                    return markets
+            except Exception:
+                logger.debug("dome nba markets failed, falling back to gamma")
+        return await self._gamma.get_markets(limit=50, tag="nba", active=True)
 
     async def collect(self, db: AsyncSession) -> None:
         # 1. Fetch ESPN scoreboard
@@ -107,8 +128,8 @@ class NbaCollector(BaseCollector):
         if not events:
             return
 
-        # 2. Fetch Polymarket NBA markets
-        nba_markets = await self._gamma.get_markets(limit=50, tag="nba", active=True)
+        # 2. Fetch Polymarket NBA markets (Dome → Gamma fallback)
+        nba_markets = await self._fetch_nba_markets()
 
         # 3. Process each game
         for event in events:
@@ -138,12 +159,20 @@ class NbaCollector(BaseCollector):
 
             # Find matching Polymarket market
             matched_market = _find_market_for_game(home_team, away_team, nba_markets)
-            market_id = matched_market["id"] if matched_market else None
+            market_id = (matched_market.get("id") or matched_market.get("condition_id")) if matched_market else None
 
             home_prob = away_prob = last_trade = None
             if matched_market:
                 home_prob = _parse_prob_from_market(matched_market, "home")
                 away_prob = _parse_prob_from_market(matched_market, "away")
+                # If Dome market (no outcomePrices), fetch price via Dome API
+                if home_prob is None and self._dome and matched_market.get("side_a", {}).get("id"):
+                    try:
+                        price_resp = await self._dome.get_market_price(matched_market["side_a"]["id"])
+                        home_prob = float(price_resp.get("price", 0))
+                        away_prob = 1.0 - home_prob if home_prob else None
+                    except Exception:
+                        pass
                 last_trade = home_prob  # approximation
 
             # Compute bias (only for live games)

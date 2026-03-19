@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.dome.client import DomeClient
+from core.dome.client import DomeClient, extract_list
 from data_pipeline.base import BaseCollector
 from api.data.dome.models import CrossPlatformSpread
 
@@ -34,7 +34,7 @@ class KalshiCollector(BaseCollector):
                 logger.debug("no matches for %s on %s", sport, today)
                 continue
 
-            matches = resp.get("data", []) if isinstance(resp, dict) else resp
+            matches = extract_list(resp)
             if not matches:
                 continue
 

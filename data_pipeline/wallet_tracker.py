@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.dome.client import DomeClient
+from core.dome.client import DomeClient, extract_list
 from data_pipeline.base import BaseCollector
 from api.data.dome.models import WalletSnapshot
 
@@ -35,7 +35,7 @@ class WalletTracker(BaseCollector):
 
                 # Fetch positions.
                 pos_resp = await self._dome.get_positions(addr, limit=100)
-                positions = pos_resp.get("data", []) if isinstance(pos_resp, dict) else pos_resp
+                positions = extract_list(pos_resp)
                 position_count = len(positions)
 
                 snapshot = WalletSnapshot(

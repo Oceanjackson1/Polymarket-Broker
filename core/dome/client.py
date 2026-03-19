@@ -419,3 +419,24 @@ def _clean_params(params: dict | None) -> dict | None:
     if params is None:
         return None
     return {k: v for k, v in params.items() if v is not None}
+
+
+def extract_list(resp: Any) -> list:
+    """Extract the data list from a Dome API response.
+
+    Dome endpoints use different wrapper keys:
+      - /polymarket/markets   → {"markets": [...]}
+      - /polymarket/events    → {"events": [...]}
+      - /kalshi/markets       → {"markets": [...]}
+      - /crypto-prices/*      → {"prices": [...]}
+      - others                → {"data": [...]}
+    This helper tries common keys and falls back gracefully.
+    """
+    if isinstance(resp, list):
+        return resp
+    if not isinstance(resp, dict):
+        return []
+    for key in ("markets", "events", "data", "prices", "orders", "trades", "positions", "orderbooks"):
+        if key in resp and isinstance(resp[key], list):
+            return resp[key]
+    return []

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx fumadocs-mdx:*)",
+      "Bash(NEXT_TURBOPACK=0 npx next build)",
+      "Bash(npm ls:*)",
+      "Bash(ENV_FILE=.env.test pytest tests/test_strategies/ tests/test_webhooks/ -v --tb=short)"
+    ]
+  }
+}

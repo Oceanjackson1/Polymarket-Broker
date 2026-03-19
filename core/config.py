@@ -54,6 +54,23 @@ class Settings(BaseSettings):
     open_meteo_ensemble_base: str = "https://ensemble-api.open-meteo.com"
     open_meteo_geocoding_base: str = "https://geocoding-api.open-meteo.com"
 
+    # Sports APIs (P00)
+    odds_api_key: str = ""  # the-odds-api.com
+    odds_api_base: str = "https://api.the-odds-api.com/v4"
+    api_football_key: str = ""  # api-sports.io
+    api_football_base: str = "https://v3.football.api-sports.io"
+    balldontlie_api_key: str = ""  # balldontlie.io
+    balldontlie_api_base: str = "https://api.balldontlie.io/v1"
+    football_data_key: str = ""  # football-data.org
+    football_data_base: str = "https://api.football-data.org/v4"
+
+    # Live Orderbook (Tencent Cloud server)
+    live_ob_binance_url: str = ""  # e.g. http://localhost:18080 (via SSH tunnel)
+    live_ob_binance_api_key: str = ""
+    live_ob_ssh_host: str = ""  # e.g. root@10.193.48.144
+    live_ob_ssh_key_path: str = ""  # path to PEM file
+    live_ob_polymarket_data_dir: str = "/data/polymarket-agent/output/orderbook"
+
     # DeepSeek AI
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"

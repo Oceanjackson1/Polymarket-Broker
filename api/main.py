@@ -18,7 +18,9 @@ from api.data.nba.router import router as nba_data_router
 from api.data.btc.router import router as btc_data_router
 from api.data.crypto.router import router as crypto_data_router
 from api.data.dome.router import router as dome_data_router
+from api.data.live_orderbook.router import router as live_ob_router
 from api.data.weather.router import router as weather_data_router
+from api.data.sports.odds_router import router as sports_odds_router
 from api.analysis.router import router as analysis_router
 from api.strategies.router import router as strategies_router
 from api.webhooks.router import router as webhooks_router
@@ -55,6 +57,25 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.warning("failed to initialise dome stack", exc_info=True)
 
+    # ── Build Live Orderbook clients (optional) ──
+    try:
+        from core.live_orderbook.remote_client import BinanceOrderbookClient, PolymarketOrderbookClient
+        if settings.live_ob_binance_url:
+            app.state.binance_ob_client = BinanceOrderbookClient(
+                base_url=settings.live_ob_binance_url,
+                api_key=settings.live_ob_binance_api_key,
+            )
+            logger.info("binance orderbook client initialised: %s", settings.live_ob_binance_url)
+        if settings.live_ob_ssh_host and settings.live_ob_ssh_key_path:
+            app.state.polymarket_ob_client = PolymarketOrderbookClient(
+                ssh_host=settings.live_ob_ssh_host,
+                ssh_key_path=settings.live_ob_ssh_key_path,
+                data_dir=settings.live_ob_polymarket_data_dir,
+            )
+            logger.info("polymarket orderbook client initialised (SSH)")
+    except Exception:
+        logger.warning("failed to initialise live orderbook clients", exc_info=True)
+
     # ── Start collectors ──
     tasks = []
     if not settings.disable_collectors:
@@ -65,6 +86,7 @@ async def lifespan(app: FastAPI):
 
         from data_pipeline.coinglass_collector import CoinGlassCollector
         from data_pipeline.weather_collector import WeatherCollector
+        from data_pipeline.sports_odds_collector import SportsOddsCollector
 
         tasks = [
             asyncio.create_task(SportsCollector(dome_client=dome_client).run(AsyncSessionLocal)),
@@ -72,6 +94,7 @@ async def lifespan(app: FastAPI):
             asyncio.create_task(BtcCollector(dome_client=dome_client).run(AsyncSessionLocal)),
             asyncio.create_task(CoinGlassCollector().run(AsyncSessionLocal)),
             asyncio.create_task(WeatherCollector().run(AsyncSessionLocal)),
+            asyncio.create_task(SportsOddsCollector().run(AsyncSessionLocal)),
         ]
 
         # Dome-powered collectors (only if keys present).
@@ -100,6 +123,10 @@ async def lifespan(app: FastAPI):
         await dome_ws.stop()
     if dome_client:
         await dome_client.close()
+
+    binance_ob = getattr(app.state, "binance_ob_client", None)
+    if binance_ob:
+        await binance_ob.close()
 
     await app.state.redis.aclose()
 
@@ -131,7 +158,9 @@ app.include_router(nba_data_router, prefix=settings.api_v1_prefix)
 app.include_router(btc_data_router, prefix=settings.api_v1_prefix)
 app.include_router(crypto_data_router, prefix=settings.api_v1_prefix)
 app.include_router(dome_data_router, prefix=settings.api_v1_prefix)
+app.include_router(live_ob_router, prefix=settings.api_v1_prefix)
 app.include_router(weather_data_router, prefix=settings.api_v1_prefix)
+app.include_router(sports_odds_router, prefix=settings.api_v1_prefix)
 app.include_router(analysis_router, prefix=settings.api_v1_prefix)
 app.include_router(strategies_router, prefix=settings.api_v1_prefix)
 app.include_router(webhooks_router, prefix=settings.api_v1_prefix)

@@ -1,6 +1,8 @@
 "use client";
 
 import { useOrders } from "@/lib/hooks/use-orders";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ordersApi } from "@/lib/api";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return (
@@ -53,6 +55,11 @@ function formatDate(isoString: string): string {
 
 export default function OrdersPage() {
   const { data, isLoading, error } = useOrders();
+  const queryClient = useQueryClient();
+  const cancelMutation = useMutation({
+    mutationFn: (orderId: string) => ordersApi.cancel(orderId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+  });
 
   const orders = data?.data ?? [];
   const openCount = orders.filter((o) => o.status === "OPEN").length;
@@ -190,9 +197,11 @@ export default function OrdersPage() {
                     <td className="px-4 py-3 text-right">
                       {canCancel(order.status) ? (
                         <button
+                          onClick={() => cancelMutation.mutate(order.order_id)}
+                          disabled={cancelMutation.isPending}
                           className="rounded-md border border-border-default px-3 py-1 text-xs font-medium text-text-secondary transition-colors hover:border-loss hover:text-loss disabled:opacity-50"
                         >
-                          Cancel
+                          {cancelMutation.isPending ? "…" : "Cancel"}
                         </button>
                       ) : (
                         <span className="text-xs text-text-muted">—</span>

@@ -245,16 +245,25 @@ export type PaginatedResponse<T> = {
 
 export type Market = {
   id: string;
-  question: string;
+  // Gamma API uses "question", Dome API uses "title"
+  question?: string;
+  title?: string;
+  market_slug?: string;
   category?: string;
+  tags?: string[];
   volume?: number;
   volume24hr?: number;
+  volume_total?: number;
+  volume_1_week?: number;
   lastTradePrice?: number;
   oneDayPriceChange?: number;
   outcomes?: string[];
   outcomePrices?: string[];
   active?: boolean;
   endDate?: string;
+  end_time?: number;
+  description?: string;
+  image?: string;
 };
 
 export type Orderbook = { bids: OrderbookLevel[]; asks: OrderbookLevel[] };

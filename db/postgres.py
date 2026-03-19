@@ -23,6 +23,7 @@ def _register_models():
     from api.data.crypto.models import CryptoDerivatives  # noqa: F401
     from api.data.dome.models import MarketSnapshot, CrossPlatformSpread, WalletSnapshot  # noqa: F401
     from api.data.weather.models import WeatherEvent, CityCoordinate  # noqa: F401
+    from api.webhooks.models import Webhook  # noqa: F401
 
 _register_models()
 

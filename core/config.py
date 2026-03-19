@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # Data Pipeline
     espn_api_base: str = "https://site.api.espn.com"
     coingecko_api_base: str = "https://api.coingecko.com"
+    coingecko_api_key: str = ""
     disable_collectors: bool = False
 
     # CoinGlass

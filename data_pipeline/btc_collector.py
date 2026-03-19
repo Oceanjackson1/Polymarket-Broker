@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from data_pipeline.base import BaseCollector
 from api.data.btc.models import BtcSnapshot
 from core.polymarket.gamma_client import GammaClient
-from core.dome.client import DomeClient
+from core.dome.client import DomeClient, extract_list
 from core.config import get_settings as _get_settings
 
 logger = logging.getLogger(__name__)
@@ -66,14 +66,18 @@ class BtcCollector(BaseCollector):
         if self._dome:
             try:
                 resp = await self._dome.get_binance_price("btcusdt", limit=1)
-                data = resp.get("data", []) if isinstance(resp, dict) else resp
+                data = extract_list(resp)
                 if data:
                     return Decimal(str(data[0].get("value", data[0].get("price", 0))))
             except Exception:
                 logger.debug("dome binance price failed, falling back to coingecko")
 
         # Fallback: CoinGecko
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        settings = _get_settings()
+        headers = {}
+        if settings.coingecko_api_key:
+            headers["x-cg-demo-api-key"] = settings.coingecko_api_key
+        async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
             resp = await client.get(COINGECKO_URL)
             resp.raise_for_status()
             data = resp.json()
@@ -84,7 +88,7 @@ class BtcCollector(BaseCollector):
         if self._dome:
             try:
                 resp = await self._dome.get_markets(tags=["crypto"], status="open", limit=20)
-                markets = resp.get("data", []) if isinstance(resp, dict) else resp
+                markets = extract_list(resp)
                 if markets:
                     return markets
             except Exception:

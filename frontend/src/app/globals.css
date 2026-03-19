@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* ═══ Polymarket Broker — Institutional Trading Terminal Design Tokens ═══ */
+
+:root {
+  /* Base Surfaces (3-tier depth) */
+  --bg-base: #0B0F1A;
+  --bg-card: #111827;
+  --bg-elevated: #1E293B;
+  --bg-hover: #253449;
+
+  /* Text Hierarchy */
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+
+  /* Brand Accent (Amber/Gold) */
+  --accent-gold: #F59E0B;
+  --accent-gold-hover: #D97706;
+  --accent-gold-bg: #92400E;
+
+  /* Profit/Loss (Low saturation, anti-emotional) */
+  --profit: #10B981;
+  --profit-bg: #064E3B;
+  --loss: #EF4444;
+  --loss-bg: #7F1D1D;
+  --flat: #6B7280;
+
+  /* Information */
+  --info-cyan: #06B6D4;
+  --info-blue: #3B82F6;
+  --warning: #F97316;
+
+  /* CVD-Safe Alternatives */
+  --cvd-up: #3B82F6;
+  --cvd-down: #F97316;
+
+  /* Borders & Dividers */
+  --border-subtle: #1E293B;
+  --border-default: #334155;
+
+  /* Marketing/Public pages — light theme */
+  --background: #ffffff;
+  --foreground: #0B0F1A;
+}
+
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-card: var(--bg-card);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-hover: var(--bg-hover);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-accent-gold: var(--accent-gold);
+  --color-accent-gold-hover: var(--accent-gold-hover);
+  --color-accent-gold-bg: var(--accent-gold-bg);
+
+  --color-profit: var(--profit);
+  --color-profit-bg: var(--profit-bg);
+  --color-loss: var(--loss);
+  --color-loss-bg: var(--loss-bg);
+  --color-flat: var(--flat);
+
+  --color-info-cyan: var(--info-cyan);
+  --color-info-blue: var(--info-blue);
+  --color-warning: var(--warning);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+/* ═══ Terminal (Dashboard) Mode ═══ */
+.terminal {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+/* ═══ Global Resets ═══ */
+body {
+  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar (terminal style) */
+.terminal ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.terminal ::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+.terminal ::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+.terminal ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

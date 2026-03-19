@@ -253,6 +253,93 @@ export interface PaginatedSportsEvents {
   };
 }
 
+// ─── Weather Data Types ──────────────────────────────────────────────────────
+
+export interface WeatherDateResponse {
+  date: string;
+  city_count: number;
+  event_count: number;
+}
+
+export interface WeatherCityResponse {
+  city: string;
+  event_date: string;
+  max_bias_range: string | null;
+  max_bias_direction: string | null;
+  max_bias_bps: number | null;
+  data_updated_at: string;
+}
+
+export interface WeatherTempBin {
+  range: string;
+  market_id: string | null;
+  market_prob: number;
+  forecast_prob: number;
+  bias_direction: string;
+  bias_bps: number;
+}
+
+export interface WeatherFusionResponse {
+  city: string;
+  date: string;
+  event_slug: string;
+  temp_unit: string;
+  temp_bins: WeatherTempBin[];
+  max_bias: {
+    range: string;
+    direction: string;
+    magnitude_bps: number;
+  };
+  stale: boolean;
+  data_updated_at: string;
+}
+
+// ─── Analysis Types ──────────────────────────────────────────────────────────
+
+export interface MarketAnalysisResponse {
+  market_id: string;
+  ai_probability: number;
+  market_price: number;
+  bias_direction: string;
+  bias_bps: number;
+  reasoning: string;
+}
+
+export interface ScanOpportunity {
+  market_id: string;
+  question: string;
+  bias_direction: string;
+  bias_bps: number;
+}
+
+export interface ScanResponse {
+  opportunities: ScanOpportunity[];
+}
+
+export interface AskResponse {
+  answer: string;
+  sources?: string[];
+}
+
+// ─── Strategies Types ────────────────────────────────────────────────────────
+
+export interface ConvergenceOpportunity {
+  market_id: string;
+  question: string;
+  current_price: number;
+  fair_value: number;
+  profit_bps: number;
+}
+
+export interface ConvergencePosition {
+  market_id: string;
+  question: string;
+  entry_price: number;
+  current_price: number;
+  size: number;
+  pnl: number;
+}
+
 // ─── Markets Types (raw from Polymarket Gamma/CLOB — loosely typed) ───────────
 
 export interface MarketResponse {
@@ -445,4 +532,52 @@ export const marketsApi = {
 
   search: (q: string): Promise<MarketsListResponse> =>
     apiFetch<MarketsListResponse>(`/markets/search?q=${encodeURIComponent(q)}`),
+};
+
+// ─── Weather API ─────────────────────────────────────────────────────────────
+
+export const weatherApi = {
+  dates: (): Promise<WeatherDateResponse[]> =>
+    apiFetch<WeatherDateResponse[]>("/data/weather/dates"),
+
+  cities: (date: string): Promise<WeatherCityResponse[]> =>
+    apiFetch<WeatherCityResponse[]>(`/data/weather/dates/${date}/cities`),
+
+  fusion: (date: string, city: string): Promise<WeatherFusionResponse> =>
+    apiFetch<WeatherFusionResponse>(`/data/weather/dates/${date}/cities/${encodeURIComponent(city)}/fusion`),
+};
+
+// ─── Analysis API ────────────────────────────────────────────────────────────
+
+export const analysisApi = {
+  market: (marketId: string): Promise<MarketAnalysisResponse> =>
+    apiFetch<MarketAnalysisResponse>(`/analysis/market/${encodeURIComponent(marketId)}`),
+
+  scan: (): Promise<ScanResponse> =>
+    apiFetch<ScanResponse>("/analysis/scan", { method: "POST" }),
+
+  nba: (gameId: string): Promise<Record<string, unknown>> =>
+    apiFetch<Record<string, unknown>>(`/analysis/nba/${encodeURIComponent(gameId)}`),
+
+  ask: (question: string): Promise<AskResponse> =>
+    apiFetch<AskResponse>("/analysis/ask", {
+      method: "POST",
+      body: JSON.stringify({ question }),
+    }),
+};
+
+// ─── Strategies API ──────────────────────────────────────────────────────────
+
+export const strategiesApi = {
+  opportunities: (): Promise<ConvergenceOpportunity[]> =>
+    apiFetch<ConvergenceOpportunity[]>("/strategies/convergence/opportunities"),
+
+  execute: (marketId: string, size: number): Promise<OrderResponse> =>
+    apiFetch<OrderResponse>("/strategies/convergence/execute", {
+      method: "POST",
+      body: JSON.stringify({ market_id: marketId, size }),
+    }),
+
+  positions: (): Promise<ConvergencePosition[]> =>
+    apiFetch<ConvergencePosition[]>("/strategies/convergence/positions"),
 };

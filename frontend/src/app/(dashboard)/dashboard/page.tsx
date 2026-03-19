@@ -1,31 +1,109 @@
+"use client";
+
+import { useBalance, usePnl, usePositions } from "@/lib/hooks/use-portfolio";
+import { useNbaGames } from "@/lib/hooks/use-nba";
+import { useBtcPredictions } from "@/lib/hooks/use-btc";
+
+function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <div className={`animate-pulse rounded bg-bg-elevated ${className}`} />
+  );
+}
+
 export default function DashboardPage() {
+  const balance = useBalance();
+  const pnl = usePnl();
+  const positions = usePositions();
+  const nbaGames = useNbaGames();
+  const btcPredictions = useBtcPredictions();
+
+  const totalAssets = balance.data?.balance ?? null;
+  const todayPnl = pnl.data?.realized ?? null;
+  const unrealizedPnl = pnl.data?.unrealized ?? null;
+  const activePositions = positions.data?.positions ?? [];
+  const games = nbaGames.data?.data ?? [];
+  const predictions = btcPredictions.data ?? [];
+
+  // Derive a representative BTC price from the first snapshot
+  const btcPrice = predictions.length > 0
+    ? parseFloat(predictions[0].price_usd)
+    : null;
+
   return (
     <div className="p-6">
       {/* Top Stats Row */}
       <div className="mb-8 grid grid-cols-4 gap-4">
-        {[
-          { label: "总资产", value: "$45,230", change: null },
-          { label: "今日盈亏", value: "+$1,240", change: "+2.8%" },
-          { label: "活跃仓位", value: "12", change: null },
-          { label: "API 调用", value: "347 / 500", change: null },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-lg border border-border-subtle bg-bg-card p-5"
-          >
-            <p className="text-xs text-text-muted">{stat.label}</p>
+        {/* Total Balance */}
+        <div className="rounded-lg border border-border-subtle bg-bg-card p-5">
+          <p className="text-xs text-text-muted">总资产</p>
+          {balance.isLoading ? (
+            <Skeleton className="mt-2 h-8 w-28" />
+          ) : balance.error ? (
+            <p className="mt-1 font-mono text-2xl font-semibold text-loss">—</p>
+          ) : (
             <p className="mt-1 font-mono text-2xl font-semibold text-text-primary">
-              {stat.value}
+              ${totalAssets != null ? parseFloat(String(totalAssets)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
             </p>
-            {stat.change && (
-              <p className="mt-1 text-sm text-profit">{stat.change}</p>
-            )}
-          </div>
-        ))}
+          )}
+        </div>
+
+        {/* PnL */}
+        <div className="rounded-lg border border-border-subtle bg-bg-card p-5">
+          <p className="text-xs text-text-muted">今日盈亏</p>
+          {pnl.isLoading ? (
+            <Skeleton className="mt-2 h-8 w-28" />
+          ) : pnl.error ? (
+            <p className="mt-1 font-mono text-2xl font-semibold text-loss">—</p>
+          ) : (
+            <>
+              <p className={`mt-1 font-mono text-2xl font-semibold ${todayPnl != null && parseFloat(String(todayPnl)) >= 0 ? "text-profit" : "text-loss"}`}>
+                {todayPnl != null
+                  ? `${parseFloat(String(todayPnl)) >= 0 ? "+" : ""}$${Math.abs(parseFloat(String(todayPnl))).toFixed(2)}`
+                  : "—"}
+              </p>
+              {unrealizedPnl != null && (
+                <p className={`mt-1 text-sm ${parseFloat(String(unrealizedPnl)) >= 0 ? "text-profit" : "text-loss"}`}>
+                  unrealized: {parseFloat(String(unrealizedPnl)) >= 0 ? "+" : ""}${Math.abs(parseFloat(String(unrealizedPnl))).toFixed(2)}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Active Positions count */}
+        <div className="rounded-lg border border-border-subtle bg-bg-card p-5">
+          <p className="text-xs text-text-muted">活跃仓位</p>
+          {positions.isLoading ? (
+            <Skeleton className="mt-2 h-8 w-16" />
+          ) : positions.error ? (
+            <p className="mt-1 font-mono text-2xl font-semibold text-loss">—</p>
+          ) : (
+            <p className="mt-1 font-mono text-2xl font-semibold text-text-primary">
+              {activePositions.length}
+            </p>
+          )}
+        </div>
+
+        {/* Available / Locked */}
+        <div className="rounded-lg border border-border-subtle bg-bg-card p-5">
+          <p className="text-xs text-text-muted">可用 / 锁定</p>
+          {balance.isLoading ? (
+            <Skeleton className="mt-2 h-8 w-28" />
+          ) : balance.error ? (
+            <p className="mt-1 font-mono text-2xl font-semibold text-loss">—</p>
+          ) : (
+            <p className="mt-1 font-mono text-2xl font-semibold text-text-primary">
+              ${balance.data?.available != null ? parseFloat(String(balance.data.available)).toFixed(0) : "—"}{" "}
+              <span className="text-sm font-normal text-text-muted">
+                / ${balance.data?.locked != null ? parseFloat(String(balance.data.locked)).toFixed(0) : "—"}
+              </span>
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        {/* AI Discoveries */}
+        {/* AI Discoveries — mock data, /analysis/ endpoints not yet built */}
         <div className="col-span-3 rounded-lg border border-accent-gold/20 bg-bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
@@ -90,35 +168,37 @@ export default function DashboardPage() {
               PRO
             </span>
           </h2>
-          <div className="space-y-4">
-            {[
-              {
-                teams: "GSW 94 - 87 LAL",
-                status: "Q3 4:22",
-                bias: "HOME_UNDER +420bps",
-              },
-              {
-                teams: "BOS 102 - 98 MIA",
-                status: "Q4 1:55",
-                bias: "NEUTRAL",
-              },
-            ].map((game) => (
-              <div
-                key={game.teams}
-                className="rounded border border-border-subtle bg-bg-base p-3"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm text-text-primary">
-                    {game.teams}
-                  </span>
-                  <span className="text-xs text-info-cyan">{game.status}</span>
+          {nbaGames.isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : nbaGames.error ? (
+            <p className="text-sm text-loss">Failed to load games</p>
+          ) : games.length === 0 ? (
+            <p className="text-sm text-text-muted">No games available</p>
+          ) : (
+            <div className="space-y-4">
+              {games.slice(0, 3).map((game) => (
+                <div
+                  key={game.game_id}
+                  className="rounded border border-border-subtle bg-bg-base p-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-sm text-text-primary">
+                      {game.home_team} {game.score_home} - {game.score_away} {game.away_team}
+                    </span>
+                    <span className="text-xs text-info-cyan">
+                      {game.quarter} {game.time_remaining}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-text-muted">
+                    ID: {game.game_id}
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-text-muted">
-                  bias: {game.bias}
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* BTC Predictions */}
@@ -129,29 +209,45 @@ export default function DashboardPage() {
               PRO
             </span>
           </h2>
-          <p className="mb-4 font-mono text-xl text-text-primary">$68,420</p>
-          <div className="space-y-2">
-            {[
-              { tf: "5m", prob: "0.61", dir: "▲" },
-              { tf: "15m", prob: "0.48", dir: "▼" },
-              { tf: "1h", prob: "0.55", dir: "▲" },
-              { tf: "4h", prob: "0.62", dir: "▲" },
-            ].map((row) => (
-              <div
-                key={row.tf}
-                className="flex items-center justify-between rounded border border-border-subtle bg-bg-base p-2"
-              >
-                <span className="font-mono text-xs text-text-muted">
-                  {row.tf}
-                </span>
-                <span
-                  className={`font-mono text-sm ${row.dir === "▲" ? "text-profit" : "text-loss"}`}
-                >
-                  {row.dir} {row.prob}
-                </span>
+          {btcPredictions.isLoading ? (
+            <>
+              <Skeleton className="mb-4 h-7 w-32" />
+              <div className="space-y-2">
+                {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-8 w-full" />)}
               </div>
-            ))}
-          </div>
+            </>
+          ) : btcPredictions.error ? (
+            <p className="text-sm text-loss">Failed to load BTC predictions</p>
+          ) : (
+            <>
+              <p className="mb-4 font-mono text-xl text-text-primary">
+                {btcPrice != null ? `$${btcPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : "—"}
+              </p>
+              <div className="space-y-2">
+                {predictions.length === 0 ? (
+                  <p className="text-sm text-text-muted">No data available</p>
+                ) : (
+                  predictions.map((snap) => {
+                    const prob = parseFloat(snap.prediction_prob ?? "0.5");
+                    const isUp = prob > 0.5;
+                    return (
+                      <div
+                        key={snap.timeframe}
+                        className="flex items-center justify-between rounded border border-border-subtle bg-bg-base p-2"
+                      >
+                        <span className="font-mono text-xs text-text-muted">
+                          {snap.timeframe}
+                        </span>
+                        <span className={`font-mono text-sm ${isUp ? "text-profit" : "text-loss"}`}>
+                          {isUp ? "▲" : "▼"} {prob.toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Active Positions */}
@@ -159,30 +255,45 @@ export default function DashboardPage() {
           <h2 className="mb-4 text-sm font-semibold text-text-primary">
             活跃仓位
           </h2>
-          <div className="space-y-2">
-            {[
-              { market: "Trump 2028", pnl: "+$15", side: "BUY" },
-              { market: "BTC >70k 1h", pnl: "+$12", side: "BUY" },
-              { market: "GSW vs LAL", pnl: "+$2", side: "BUY" },
-            ].map((pos) => (
-              <div
-                key={pos.market}
-                className="flex items-center justify-between rounded border border-border-subtle bg-bg-base p-2"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="rounded bg-profit-bg px-1.5 py-0.5 font-mono text-[10px] text-profit">
-                    {pos.side}
-                  </span>
-                  <span className="text-sm text-text-primary">
-                    {pos.market}
-                  </span>
-                </div>
-                <span className="font-mono text-sm text-profit">
-                  {pos.pnl}
-                </span>
-              </div>
-            ))}
-          </div>
+          {positions.isLoading ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => <Skeleton key={i} className="h-8 w-full" />)}
+            </div>
+          ) : positions.error ? (
+            <p className="text-sm text-loss">Failed to load positions</p>
+          ) : activePositions.length === 0 ? (
+            <p className="text-sm text-text-muted">No active positions</p>
+          ) : (
+            <div className="space-y-2">
+              {activePositions.slice(0, 5).map((pos) => {
+                const notional = parseFloat(String(pos.notional));
+                const isPositive = notional >= 0;
+                return (
+                  <div
+                    key={pos.market_id}
+                    className="flex items-center justify-between rounded border border-border-subtle bg-bg-base p-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${pos.side === "BUY" ? "bg-profit-bg text-profit" : "bg-loss-bg text-loss"}`}>
+                        {pos.side}
+                      </span>
+                      <span className="truncate text-sm text-text-primary max-w-[100px]">
+                        {pos.market_id}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className={`font-mono text-sm ${isPositive ? "text-profit" : "text-loss"}`}>
+                        {isPositive ? "+" : ""}${Math.abs(notional).toFixed(2)}
+                      </span>
+                      <p className="font-mono text-[10px] text-text-muted">
+                        {parseFloat(String(pos.size_held)).toFixed(0)} @ {parseFloat(String(pos.avg_price)).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

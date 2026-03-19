@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -120,7 +121,9 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-bg-base">{children}</main>
+      <main className="flex-1 overflow-y-auto bg-bg-base">
+        <QueryProvider>{children}</QueryProvider>
+      </main>
     </div>
   );
 }

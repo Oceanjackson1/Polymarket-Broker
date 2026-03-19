@@ -1,7 +1,6 @@
 // ─── Polymarket Broker — Typed API Client ────────────────────────────────────
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_BASE = "/api/v1";
 
 // ─── Error ────────────────────────────────────────────────────────────────────
 
@@ -54,268 +53,230 @@ async function apiFetch<T>(
   return res.json() as Promise<T>;
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Auth Types ───────────────────────────────────────────────────────────────
 
-export interface Market {
+export interface UserResponse {
   id: string;
-  question: string;
-  category: string;
-  status: "open" | "closed" | "resolved";
-  yes_price: number;
-  no_price: number;
-  volume: number;
-  liquidity: number;
-  end_date: string;
-}
-
-export interface OrderbookLevel {
-  price: number;
-  size: number;
-}
-
-export interface Orderbook {
-  market_id: string;
-  yes: { bids: OrderbookLevel[]; asks: OrderbookLevel[] };
-  no: { bids: OrderbookLevel[]; asks: OrderbookLevel[] };
-  timestamp: string;
-}
-
-export interface Trade {
-  id: string;
-  market_id: string;
-  side: "YES" | "NO";
-  price: number;
-  size: number;
-  timestamp: string;
-}
-
-export interface Midpoint {
-  market_id: string;
-  yes_midpoint: number;
-  no_midpoint: number;
-}
-
-export interface Position {
-  market_id: string;
-  market_question: string;
-  side: "YES" | "NO";
-  size: number;
-  avg_price: number;
-  current_price: number;
-  unrealized_pnl: number;
-  realized_pnl: number;
-}
-
-export interface Balance {
-  usdc: number;
-  reserved: number;
-  available: number;
-}
-
-export interface PnL {
-  total_realized: number;
-  total_unrealized: number;
-  today_pnl: number;
-  all_time_pnl: number;
-}
-
-export interface Order {
-  id: string;
-  market_id: string;
-  side: "YES" | "NO";
-  type: "limit" | "market";
-  price: number;
-  size: number;
-  status: "open" | "filled" | "cancelled" | "partial";
+  email: string;
+  tier: string;
   created_at: string;
 }
 
-export interface BuildOrderRequest {
-  market_id: string;
-  side: "YES" | "NO";
-  type: "limit" | "market";
-  price?: number;
-  size: number;
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
 }
 
-export interface BuiltOrder {
-  order_id: string;
-  signature_data: Record<string, unknown>;
-  estimated_fill: number;
-  fee: number;
-}
-
-export interface SubmitOrderRequest {
-  order_id: string;
-  signature: string;
-}
-
-export interface SportCategory {
+export interface ApiKeyListItem {
   id: string;
   name: string;
-  slug: string;
-  event_count: number;
+  key_hint: string;
+  scopes: string[];
+  is_active: boolean;
+  created_at: string;
+  last_used_at: string | null;
 }
 
-export interface SportEvent {
+export interface ApiKeyCreatedResponse {
   id: string;
-  sport: string;
-  home_team: string;
-  away_team: string;
-  start_time: string;
-  status: string;
-  market_id?: string;
+  name: string;
+  key: string;
+  key_hint: string;
+  scopes: string[];
+  created_at: string;
 }
 
-export interface NbaGame {
-  id: string;
-  home_team: string;
-  away_team: string;
-  home_score: number;
-  away_score: number;
-  quarter: number;
-  time_remaining: string;
-  status: "scheduled" | "live" | "final";
-  game_date: string;
-}
+// ─── Orders Types ─────────────────────────────────────────────────────────────
 
-export interface NbaGameFusion {
-  game: NbaGame;
-  market: Market | null;
-  bias_signal: string | null;
-  bias_bps: number | null;
-  yes_price: number | null;
-  model_probability: number | null;
-}
-
-export interface BtcPrediction {
-  timeframe: string;
-  direction: "UP" | "DOWN";
-  probability: number;
-  model_version: string;
-  generated_at: string;
-}
-
-export interface BtcOnchain {
+export interface OrderResponse {
+  order_id: string;
+  market_id: string;
+  token_id: string;
+  side: "BUY" | "SELL";
+  type: "LIMIT" | "MARKET" | "GTD";
   price: number;
-  volume_24h: number;
-  market_cap: number;
-  dominance: number;
-  fear_greed_index: number;
-  timestamp: string;
+  size: number;
+  size_filled: number;
+  size_remaining: number;
+  status: string;
+  broker_fee_bps: number;
+  polymarket_order_id: string | null;
+  mode: string;
+  created_at: string;
+  updated_at: string;
+  expires_at: string | null;
 }
 
-export interface BtcHistoryPoint {
-  timestamp: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
+export interface PaginatedOrders {
+  data: OrderResponse[];
+  pagination: Record<string, unknown>;
+}
+
+export interface BuildOrderResponse {
+  eip712_payload: Record<string, unknown>;
+  payload_hash: string;
+}
+
+// ─── Portfolio Types ──────────────────────────────────────────────────────────
+
+export interface PositionsResponse {
+  positions: {
+    market_id: string;
+    token_id: string;
+    side: string;
+    size_held: number;
+    avg_price: number;
+    notional: number;
+    order_count: number;
+  }[];
+}
+
+export interface BalanceResponse {
+  balance: number;
+  locked: number;
+  available: number;
+}
+
+export interface PnlResponse {
+  realized: number;
+  unrealized: number;
+  fees_paid_broker: number;
+  fees_paid_polymarket: number;
+}
+
+// ─── NBA Data Types ───────────────────────────────────────────────────────────
+
+export interface NbaGameResponse {
+  game_id: string;
+  home_team: string;
+  away_team: string;
+  game_date: string;
+  game_status: string;
+  score_home: number | null;
+  score_away: number | null;
+  quarter: number | null;
+  time_remaining: string | null;
+  market_id: string | null;
+  data_updated_at: string;
+}
+
+export interface NbaFusionResponse {
+  game_id: string;
+  score: {
+    home: number | null;
+    away: number | null;
+    quarter: number | null;
+    time_remaining: string | null;
+  };
+  polymarket: {
+    home_win_prob: number | null;
+    away_win_prob: number | null;
+    last_trade_price: number | null;
+  };
+  bias_signal: {
+    direction: string | null;
+    magnitude_bps: number | null;
+  };
+  stale: boolean;
+  data_updated_at: string;
+}
+
+export interface PaginatedNbaGames {
+  data: NbaGameResponse[];
+  pagination: {
+    cursor: string | null;
+    has_more: boolean;
+    limit: number;
+  };
+}
+
+export interface NbaGameDetailResponse {
+  stale: boolean;
+  data_updated_at: string;
+  data: NbaGameResponse;
+}
+
+// ─── BTC Data Types ───────────────────────────────────────────────────────────
+
+export interface BtcSnapshotResponse {
+  id: number;
+  timeframe: string;
+  price_usd: string;
+  market_id: string | null;
+  prediction_prob: string | null;
+  volume: string | null;
+  recorded_at: string;
+}
+
+export interface BtcTimeframeResponse {
+  stale: boolean;
+  data_updated_at: string | null;
+  data: BtcSnapshotResponse[];
+}
+
+export interface BtcHistoryResponse {
+  data: BtcSnapshotResponse[];
+  pagination: {
+    limit: number;
+    count: number;
+  };
+}
+
+// ─── Sports Data Types ────────────────────────────────────────────────────────
+
+export interface SportsCategoryResponse {
+  slug: string;
+  active_events: number;
+}
+
+export interface SportsEventResponse {
+  market_id: string;
+  sport_slug: string;
+  question: string;
+  outcomes: unknown[];
+  status: string;
+  resolution: unknown | null;
+  volume: number | null;
+  end_date: string | null;
+  data_updated_at: string;
+}
+
+export interface PaginatedSportsEvents {
+  stale: boolean;
+  data_updated_at: string | null;
+  data: SportsEventResponse[];
+  pagination: {
+    cursor: string | null;
+    has_more: boolean;
+    limit: number;
+  };
+}
+
+// ─── Markets Types (raw from Polymarket Gamma/CLOB — loosely typed) ───────────
+
+export interface MarketResponse {
+  [key: string]: unknown;
+  id?: string;
+  question?: string;
+}
+
+export interface MarketsListResponse {
+  data: MarketResponse[];
+  pagination: {
+    limit: number;
+    offset: number;
+    has_more: boolean;
+  };
 }
 
 export interface ListMarketsParams {
-  category?: string;
-  status?: "open" | "closed" | "resolved";
   limit?: number;
   offset?: number;
+  [key: string]: unknown;
 }
 
-// ─── Markets API ──────────────────────────────────────────────────────────────
-
-export const marketsApi = {
-  list: (params?: ListMarketsParams): Promise<Market[]> => {
-    const qs = params
-      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
-      : "";
-    return apiFetch<Market[]>(`/markets/${qs}`);
-  },
-
-  get: (id: string): Promise<Market> => apiFetch<Market>(`/markets/${id}`),
-
-  orderbook: (id: string): Promise<Orderbook> =>
-    apiFetch<Orderbook>(`/markets/${id}/orderbook`),
-
-  trades: (id: string): Promise<Trade[]> =>
-    apiFetch<Trade[]>(`/markets/${id}/trades`),
-
-  midpoint: (id: string): Promise<Midpoint> =>
-    apiFetch<Midpoint>(`/markets/${id}/midpoint`),
-
-  search: (q: string): Promise<Market[]> =>
-    apiFetch<Market[]>(`/markets/?q=${encodeURIComponent(q)}`),
-};
-
-// ─── Orders API ───────────────────────────────────────────────────────────────
-
-export const ordersApi = {
-  list: (): Promise<Order[]> => apiFetch<Order[]>("/orders/"),
-
-  build: (req: BuildOrderRequest): Promise<BuiltOrder> =>
-    apiFetch<BuiltOrder>("/orders/build", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-
-  submit: (req: SubmitOrderRequest): Promise<Order> =>
-    apiFetch<Order>("/orders/submit", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-};
-
-// ─── Portfolio API ────────────────────────────────────────────────────────────
-
-export const portfolioApi = {
-  positions: (): Promise<Position[]> =>
-    apiFetch<Position[]>("/portfolio/positions"),
-
-  balance: (): Promise<Balance> => apiFetch<Balance>("/portfolio/balance"),
-
-  pnl: (): Promise<PnL> => apiFetch<PnL>("/portfolio/pnl"),
-};
-
-// ─── NBA API ──────────────────────────────────────────────────────────────────
-
-export const nbaApi = {
-  games: (): Promise<NbaGame[]> => apiFetch<NbaGame[]>("/data/nba/games"),
-
-  game: (id: string): Promise<NbaGame> =>
-    apiFetch<NbaGame>(`/data/nba/games/${id}`),
-
-  fusion: (id: string): Promise<NbaGameFusion> =>
-    apiFetch<NbaGameFusion>(`/data/nba/games/${id}/fusion`),
-};
-
-// ─── Sports API ───────────────────────────────────────────────────────────────
-
-export const sportsApi = {
-  categories: (): Promise<SportCategory[]> =>
-    apiFetch<SportCategory[]>("/data/sports/categories"),
-
-  events: (sport: string): Promise<SportEvent[]> =>
-    apiFetch<SportEvent[]>(`/data/sports/${encodeURIComponent(sport)}/events`),
-};
-
-// ─── BTC API ─────────────────────────────────────────────────────────────────
-
-export const btcApi = {
-  predictions: (): Promise<BtcPrediction[]> =>
-    apiFetch<BtcPrediction[]>("/data/btc/predictions"),
-
-  prediction: (timeframe: string): Promise<BtcPrediction> =>
-    apiFetch<BtcPrediction>(
-      `/data/btc/predictions/${encodeURIComponent(timeframe)}`
-    ),
-
-  onchain: (): Promise<BtcOnchain> =>
-    apiFetch<BtcOnchain>("/data/btc/onchain"),
-
-  history: (): Promise<BtcHistoryPoint[]> =>
-    apiFetch<BtcHistoryPoint[]>("/data/btc/history"),
-};
-
-// ─── Auth API ─────────────────────────────────────────────────────────────────
+// ─── Auth request shapes ──────────────────────────────────────────────────────
 
 export interface RegisterRequest {
   email: string;
@@ -327,29 +288,161 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface AuthResponse {
-  access_token: string;
-  token_type: string;
+export interface CreateApiKeyRequest {
+  name: string;
+  scopes?: string[];
 }
 
-export interface ApiKeyResponse {
-  key: string;
-  created_at: string;
-}
+// ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
-  register: (req: RegisterRequest): Promise<AuthResponse> =>
-    apiFetch<AuthResponse>("/auth/register", {
+  register: (req: RegisterRequest): Promise<TokenResponse> =>
+    apiFetch<TokenResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(req),
     }),
 
-  login: (req: LoginRequest): Promise<AuthResponse> =>
-    apiFetch<AuthResponse>("/auth/login", {
+  login: (req: LoginRequest): Promise<TokenResponse> =>
+    apiFetch<TokenResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(req),
     }),
 
-  apiKeys: (): Promise<ApiKeyResponse[]> =>
-    apiFetch<ApiKeyResponse[]>("/auth/api-keys"),
+  me: (): Promise<UserResponse> => apiFetch<UserResponse>("/auth/me"),
+
+  apiKeys: (): Promise<ApiKeyListItem[]> =>
+    apiFetch<ApiKeyListItem[]>("/auth/api-keys"),
+
+  createApiKey: (req: CreateApiKeyRequest): Promise<ApiKeyCreatedResponse> =>
+    apiFetch<ApiKeyCreatedResponse>("/auth/api-keys", {
+      method: "POST",
+      body: JSON.stringify(req),
+    }),
+
+  deleteApiKey: (id: string): Promise<void> =>
+    apiFetch<void>(`/auth/api-keys/${id}`, { method: "DELETE" }),
+};
+
+// ─── Orders API ───────────────────────────────────────────────────────────────
+
+export interface BuildOrderRequest {
+  market_id: string;
+  token_id: string;
+  side: "BUY" | "SELL";
+  type: "LIMIT" | "MARKET" | "GTD";
+  price?: number;
+  size: number;
+  expires_at?: string;
+}
+
+export interface SubmitOrderRequest {
+  payload_hash: string;
+  signature: string;
+}
+
+export const ordersApi = {
+  list: (): Promise<PaginatedOrders> =>
+    apiFetch<PaginatedOrders>("/orders/"),
+
+  build: (req: BuildOrderRequest): Promise<BuildOrderResponse> =>
+    apiFetch<BuildOrderResponse>("/orders/build", {
+      method: "POST",
+      body: JSON.stringify(req),
+    }),
+
+  submit: (req: SubmitOrderRequest): Promise<OrderResponse> =>
+    apiFetch<OrderResponse>("/orders/submit", {
+      method: "POST",
+      body: JSON.stringify(req),
+    }),
+
+  cancel: (orderId: string): Promise<void> =>
+    apiFetch<void>(`/orders/${orderId}`, { method: "DELETE" }),
+};
+
+// ─── Portfolio API ────────────────────────────────────────────────────────────
+
+export const portfolioApi = {
+  positions: (): Promise<PositionsResponse> =>
+    apiFetch<PositionsResponse>("/portfolio/positions"),
+
+  balance: (): Promise<BalanceResponse> =>
+    apiFetch<BalanceResponse>("/portfolio/balance"),
+
+  pnl: (): Promise<PnlResponse> => apiFetch<PnlResponse>("/portfolio/pnl"),
+};
+
+// ─── NBA API ──────────────────────────────────────────────────────────────────
+
+export const nbaApi = {
+  games: (): Promise<PaginatedNbaGames> =>
+    apiFetch<PaginatedNbaGames>("/data/nba/games"),
+
+  game: (id: string): Promise<NbaGameDetailResponse> =>
+    apiFetch<NbaGameDetailResponse>(`/data/nba/games/${id}`),
+
+  fusion: (id: string): Promise<NbaFusionResponse> =>
+    apiFetch<NbaFusionResponse>(`/data/nba/games/${id}/fusion`),
+};
+
+// ─── Sports API ───────────────────────────────────────────────────────────────
+
+export const sportsApi = {
+  categories: (): Promise<SportsCategoryResponse[]> =>
+    apiFetch<SportsCategoryResponse[]>("/data/sports/categories"),
+
+  events: (sport: string): Promise<PaginatedSportsEvents> =>
+    apiFetch<PaginatedSportsEvents>(
+      `/data/sports/${encodeURIComponent(sport)}/events`
+    ),
+};
+
+// ─── BTC API ─────────────────────────────────────────────────────────────────
+
+export const btcApi = {
+  predictions: (): Promise<BtcSnapshotResponse[]> =>
+    apiFetch<BtcSnapshotResponse[]>("/data/btc/predictions"),
+
+  timeframe: (tf: string): Promise<BtcTimeframeResponse> =>
+    apiFetch<BtcTimeframeResponse>(
+      `/data/btc/predictions/${encodeURIComponent(tf)}`
+    ),
+
+  history: (tf: string): Promise<BtcHistoryResponse> =>
+    apiFetch<BtcHistoryResponse>(
+      `/data/btc/history/${encodeURIComponent(tf)}`
+    ),
+};
+
+// ─── Markets API ──────────────────────────────────────────────────────────────
+
+export const marketsApi = {
+  list: (params?: ListMarketsParams): Promise<MarketsListResponse> => {
+    const qs = params
+      ? "?" +
+        new URLSearchParams(
+          Object.fromEntries(
+            Object.entries(params)
+              .filter(([, v]) => v !== undefined)
+              .map(([k, v]) => [k, String(v)])
+          )
+        ).toString()
+      : "";
+    return apiFetch<MarketsListResponse>(`/markets/${qs}`);
+  },
+
+  get: (id: string): Promise<MarketResponse> =>
+    apiFetch<MarketResponse>(`/markets/${id}`),
+
+  orderbook: (id: string): Promise<Record<string, unknown>> =>
+    apiFetch<Record<string, unknown>>(`/markets/${id}/orderbook`),
+
+  trades: (id: string): Promise<Record<string, unknown>> =>
+    apiFetch<Record<string, unknown>>(`/markets/${id}/trades`),
+
+  midpoint: (id: string): Promise<Record<string, unknown>> =>
+    apiFetch<Record<string, unknown>>(`/markets/${id}/midpoint`),
+
+  search: (q: string): Promise<MarketsListResponse> =>
+    apiFetch<MarketsListResponse>(`/markets/search?q=${encodeURIComponent(q)}`),
 };

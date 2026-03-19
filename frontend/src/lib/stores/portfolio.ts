@@ -1,13 +1,13 @@
 "use client";
 
 import { create } from "zustand";
-import type { Balance, PnL, Position } from "@/lib/api";
+import type { BalanceResponse, PnlResponse, PositionsResponse } from "@/lib/api";
 import { portfolioApi } from "@/lib/api";
 
 interface PortfolioState {
-  positions: Position[];
-  balance: Balance | null;
-  pnl: PnL | null;
+  positions: PositionsResponse | null;
+  balance: BalanceResponse | null;
+  pnl: PnlResponse | null;
   isLoading: boolean;
   error: string | null;
 
@@ -19,7 +19,7 @@ interface PortfolioState {
 }
 
 const initialState = {
-  positions: [],
+  positions: null,
   balance: null,
   pnl: null,
   isLoading: false,
@@ -79,8 +79,7 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
       set({ positions, balance, pnl, isLoading: false });
     } catch (err) {
       set({
-        error:
-          err instanceof Error ? err.message : "Failed to fetch portfolio data",
+        error: err instanceof Error ? err.message : "Failed to fetch portfolio data",
         isLoading: false,
       });
     }

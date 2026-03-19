@@ -2,6 +2,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import get_settings
 from db.postgres import init_db
@@ -17,6 +18,7 @@ from api.data.nba.router import router as nba_data_router
 from api.data.btc.router import router as btc_data_router
 from api.data.crypto.router import router as crypto_data_router
 from api.data.dome.router import router as dome_data_router
+from api.data.weather.router import router as weather_data_router
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -57,12 +59,14 @@ async def lifespan(app: FastAPI):
         from db.postgres import AsyncSessionLocal
 
         from data_pipeline.coinglass_collector import CoinGlassCollector
+        from data_pipeline.weather_collector import WeatherCollector
 
         tasks = [
-            asyncio.create_task(SportsCollector().run(AsyncSessionLocal)),
-            asyncio.create_task(NbaCollector().run(AsyncSessionLocal)),
+            asyncio.create_task(SportsCollector(dome_client=dome_client).run(AsyncSessionLocal)),
+            asyncio.create_task(NbaCollector(dome_client=dome_client).run(AsyncSessionLocal)),
             asyncio.create_task(BtcCollector(dome_client=dome_client).run(AsyncSessionLocal)),
             asyncio.create_task(CoinGlassCollector().run(AsyncSessionLocal)),
+            asyncio.create_task(WeatherCollector().run(AsyncSessionLocal)),
         ]
 
         # Dome-powered collectors (only if keys present).
@@ -102,6 +106,16 @@ app = FastAPI(
 )
 
 register_error_handlers(app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # Next.js dev
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.add_middleware(RateLimitMiddleware)
 app.include_router(auth_router, prefix=settings.api_v1_prefix)
 app.include_router(markets_router, prefix=settings.api_v1_prefix)
@@ -112,3 +126,4 @@ app.include_router(nba_data_router, prefix=settings.api_v1_prefix)
 app.include_router(btc_data_router, prefix=settings.api_v1_prefix)
 app.include_router(crypto_data_router, prefix=settings.api_v1_prefix)
 app.include_router(dome_data_router, prefix=settings.api_v1_prefix)
+app.include_router(weather_data_router, prefix=settings.api_v1_prefix)

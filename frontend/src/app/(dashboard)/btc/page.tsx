@@ -1,117 +1,47 @@
 "use client";
 
 import { useState } from "react";
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-
-const BTC_PRICE = 68420;
-const BTC_CHANGE = "+1.2%";
-
-const TIMEFRAMES = [
-  {
-    label: "5m",
-    prob: 0.61,
-    direction: "up" as const,
-    volume: "45K",
-    marketId: "btc-5m",
-  },
-  {
-    label: "15m",
-    prob: 0.48,
-    direction: "down" as const,
-    volume: "32K",
-    marketId: "btc-15m",
-  },
-  {
-    label: "1h",
-    prob: 0.55,
-    direction: "up" as const,
-    volume: "89K",
-    marketId: "btc-1h",
-  },
-  {
-    label: "4h",
-    prob: 0.62,
-    direction: "up" as const,
-    volume: "12K",
-    marketId: "btc-4h",
-  },
-];
-
-const ONCHAIN_TRADES = [
-  {
-    price: 0.62,
-    size: 500,
-    side: "BUY" as const,
-    time: "10:04:22.331",
-    txHash: "0x3a4f...8c21",
-  },
-  {
-    price: 0.61,
-    size: 200,
-    side: "SELL" as const,
-    time: "10:04:21.887",
-    txHash: "0x7f9b...1d4e",
-  },
-  {
-    price: 0.63,
-    size: 1000,
-    side: "BUY" as const,
-    time: "10:04:20.442",
-    txHash: "0xa2c1...5f3b",
-  },
-  {
-    price: 0.60,
-    size: 350,
-    side: "SELL" as const,
-    time: "10:04:19.113",
-    txHash: "0xd8e4...9a72",
-  },
-  {
-    price: 0.62,
-    size: 800,
-    side: "BUY" as const,
-    time: "10:04:17.559",
-    txHash: "0x51b7...c8f0",
-  },
-  {
-    price: 0.61,
-    size: 150,
-    side: "BUY" as const,
-    time: "10:04:15.204",
-    txHash: "0x93d2...7e1a",
-  },
-];
-
-// Simple price chart placeholder data
-const CHART_POINTS = [
-  67800, 67950, 68100, 68050, 68300, 68250, 68400, 68350, 68500, 68420,
-];
+import { useBtcPredictions } from "@/lib/hooks/use-btc";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function TimeframeCard({
-  tf,
-}: {
-  tf: (typeof TIMEFRAMES)[0];
-}) {
-  const isUp = tf.direction === "up";
+function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <div className={`animate-pulse rounded bg-bg-elevated ${className}`} />
+  );
+}
+
+function formatVolume(raw: string): string {
+  const n = parseFloat(raw);
+  if (isNaN(n)) return raw;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+  return n.toFixed(0);
+}
+
+interface TimeframeCardData {
+  timeframe: string;
+  price_usd: string;
+  prediction_prob: string | null;
+  volume: string | null;
+  recorded_at: string;
+}
+
+function TimeframeCard({ tf }: { tf: TimeframeCardData }) {
+  const prob = parseFloat(tf.prediction_prob ?? "0.5");
+  const isUp = prob > 0.5;
   return (
     <div className="flex flex-col rounded-lg border border-border-subtle bg-bg-card p-4 transition-colors hover:border-accent-gold/30">
       <div className="mb-2 flex items-center justify-between">
         <span className="font-mono text-xs font-semibold text-text-muted">
-          {tf.label}
+          {tf.timeframe}
         </span>
-        <span
-          className={`text-lg font-bold ${isUp ? "text-profit" : "text-loss"}`}
-        >
+        <span className={`text-lg font-bold ${isUp ? "text-profit" : "text-loss"}`}>
           {isUp ? "▲" : "▼"}
         </span>
       </div>
-      <p
-        className={`font-mono text-2xl font-bold ${isUp ? "text-profit" : "text-loss"}`}
-      >
-        {tf.prob.toFixed(2)}
+      <p className={`font-mono text-2xl font-bold ${isUp ? "text-profit" : "text-loss"}`}>
+        {prob.toFixed(2)}
       </p>
       <p className="mt-0.5 text-sm font-medium text-text-secondary">
         {isUp ? "Bullish" : "Bearish"}
@@ -119,14 +49,14 @@ function TimeframeCard({
       <div className="mt-3 flex items-center justify-between">
         <span className="text-xs text-text-muted">
           vol:{" "}
-          <span className="font-mono text-text-secondary">{tf.volume}</span>
+          <span className="font-mono text-text-secondary">{formatVolume(tf.volume ?? "0")}</span>
         </span>
       </div>
       {/* mini bar */}
       <div className="mt-2 h-1.5 rounded-full bg-bg-base">
         <div
           className={`h-full rounded-full transition-all ${isUp ? "bg-profit" : "bg-loss"}`}
-          style={{ width: `${tf.prob * 100}%` }}
+          style={{ width: `${prob * 100}%` }}
         />
       </div>
       <button className="mt-3 rounded border border-border-default bg-bg-elevated px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-accent-gold/40 hover:text-text-primary">
@@ -139,11 +69,22 @@ function TimeframeCard({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function BTCPage() {
+  const { data: predictions, isLoading, error } = useBtcPredictions();
   const [activeTimeframe, setActiveTimeframe] = useState("1h");
 
+  // Derive BTC price from the first snapshot
+  const btcPrice = predictions && predictions.length > 0
+    ? parseFloat(predictions[0].price_usd)
+    : null;
+
+  // Build chart points from prediction probs (mapped to price approximation)
+  const CHART_POINTS = [67800, 67950, 68100, 68050, 68300, 68250, 68400, 68350, 68500, btcPrice ?? 68420];
   const minPrice = Math.min(...CHART_POINTS);
   const maxPrice = Math.max(...CHART_POINTS);
-  const range = maxPrice - minPrice;
+  const range = maxPrice - minPrice || 1;
+
+  // Timeframe labels for chart tabs
+  const timeframeLabels = predictions ? predictions.map((p) => p.timeframe) : ["5m", "15m", "1h", "4h"];
 
   return (
     <div className="flex min-h-full flex-col gap-0 p-6">
@@ -164,19 +105,43 @@ export default function BTCPage() {
           </span>
         </div>
         <div className="text-right">
-          <p className="font-mono text-2xl font-bold text-text-primary">
-            ${BTC_PRICE.toLocaleString()}
-          </p>
-          <p className="font-mono text-sm text-profit">{BTC_CHANGE}</p>
+          {isLoading ? (
+            <Skeleton className="h-8 w-28" />
+          ) : btcPrice != null ? (
+            <>
+              <p className="font-mono text-2xl font-bold text-text-primary">
+                ${btcPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </p>
+              <p className="font-mono text-sm text-text-muted">Live</p>
+            </>
+          ) : (
+            <p className="font-mono text-2xl font-bold text-text-primary">—</p>
+          )}
         </div>
       </div>
 
       {/* ── 4 Timeframe Cards ─────────────────────────────── */}
-      <div className="mb-6 grid grid-cols-4 gap-4">
-        {TIMEFRAMES.map((tf) => (
-          <TimeframeCard key={tf.label} tf={tf} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="mb-6 grid grid-cols-4 gap-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-44 w-full rounded-lg" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="mb-6 rounded-lg border border-border-subtle bg-bg-card p-6">
+          <p className="text-sm text-loss">Failed to load BTC predictions</p>
+        </div>
+      ) : !predictions || predictions.length === 0 ? (
+        <div className="mb-6 rounded-lg border border-border-subtle bg-bg-card p-6">
+          <p className="text-sm text-text-muted">No data available</p>
+        </div>
+      ) : (
+        <div className="mb-6 grid grid-cols-4 gap-4">
+          {predictions.map((tf) => (
+            <TimeframeCard key={tf.timeframe} tf={tf} />
+          ))}
+        </div>
+      )}
 
       {/* ── Chart Placeholder ─────────────────────────────── */}
       <div className="mb-6 rounded-lg border border-border-subtle bg-bg-card p-5">
@@ -185,17 +150,17 @@ export default function BTCPage() {
             BTC Price × Prediction Probability
           </p>
           <div className="flex gap-2">
-            {TIMEFRAMES.map((tf) => (
+            {timeframeLabels.map((label) => (
               <button
-                key={tf.label}
-                onClick={() => setActiveTimeframe(tf.label)}
+                key={label}
+                onClick={() => setActiveTimeframe(label)}
                 className={`rounded px-2 py-0.5 font-mono text-[10px] transition-colors ${
-                  activeTimeframe === tf.label
+                  activeTimeframe === label
                     ? "bg-accent-gold text-bg-base"
                     : "bg-bg-elevated text-text-muted hover:text-text-primary"
                 }`}
               >
-                {tf.label}
+                {label}
               </button>
             ))}
           </div>
@@ -280,11 +245,11 @@ export default function BTCPage() {
         </div>
       </div>
 
-      {/* ── On-chain Trades Table ─────────────────────────── */}
+      {/* ── Snapshots Table (replaces On-chain Trades with real recorded_at data) */}
       <div className="rounded-lg border border-border-subtle bg-bg-card">
         <div className="flex items-center justify-between border-b border-border-subtle px-5 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-            On-chain Trades
+            Prediction Snapshots
           </p>
           <span className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-profit" />
@@ -296,53 +261,82 @@ export default function BTCPage() {
             <thead>
               <tr className="border-b border-border-subtle">
                 <th className="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                  Price
+                  Timeframe
                 </th>
                 <th className="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                  Size
+                  Price (USD)
                 </th>
                 <th className="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                  Side
+                  Prediction
                 </th>
                 <th className="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                  Time
+                  Direction
                 </th>
                 <th className="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                  TxHash
+                  Volume
+                </th>
+                <th className="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                  Recorded At
                 </th>
               </tr>
             </thead>
             <tbody>
-              {ONCHAIN_TRADES.map((trade, i) => (
-                <tr
-                  key={i}
-                  className="border-b border-border-subtle/50 transition-colors hover:bg-bg-elevated last:border-0"
-                >
-                  <td className="px-5 py-2.5 font-mono text-sm text-text-primary">
-                    {trade.price.toFixed(2)}
-                  </td>
-                  <td className="px-5 py-2.5 font-mono text-sm text-text-secondary">
-                    {trade.size}
-                  </td>
-                  <td className="px-5 py-2.5">
-                    <span
-                      className={`rounded px-2 py-0.5 font-mono text-[10px] font-semibold ${
-                        trade.side === "BUY"
-                          ? "bg-profit-bg text-profit"
-                          : "bg-loss-bg text-loss"
-                      }`}
-                    >
-                      {trade.side}
-                    </span>
-                  </td>
-                  <td className="px-5 py-2.5 font-mono text-xs text-text-muted">
-                    {trade.time}
-                  </td>
-                  <td className="px-5 py-2.5 font-mono text-xs text-info-cyan">
-                    {trade.txHash}
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center">
+                    <Skeleton className="mx-auto h-4 w-48" />
                   </td>
                 </tr>
-              ))}
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-loss">
+                    Failed to load data
+                  </td>
+                </tr>
+              ) : !predictions || predictions.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-text-muted">
+                    No data available
+                  </td>
+                </tr>
+              ) : (
+                predictions.map((snap) => {
+                  const prob = parseFloat(snap.prediction_prob ?? "0.5");
+                  const isUp = prob > 0.5;
+                  const price = parseFloat(snap.price_usd);
+                  const recordedAt = new Date(snap.recorded_at);
+                  const timeStr = isNaN(recordedAt.getTime())
+                    ? snap.recorded_at
+                    : recordedAt.toLocaleTimeString();
+                  return (
+                    <tr
+                      key={snap.timeframe}
+                      className="border-b border-border-subtle/50 transition-colors hover:bg-bg-elevated last:border-0"
+                    >
+                      <td className="px-5 py-2.5 font-mono text-sm text-text-primary">
+                        {snap.timeframe}
+                      </td>
+                      <td className="px-5 py-2.5 font-mono text-sm text-text-secondary">
+                        ${price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      </td>
+                      <td className="px-5 py-2.5 font-mono text-sm text-text-primary">
+                        {prob.toFixed(2)}
+                      </td>
+                      <td className="px-5 py-2.5">
+                        <span className={`rounded px-2 py-0.5 font-mono text-[10px] font-semibold ${isUp ? "bg-profit-bg text-profit" : "bg-loss-bg text-loss"}`}>
+                          {isUp ? "BULL" : "BEAR"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-2.5 font-mono text-sm text-text-secondary">
+                        {formatVolume(snap.volume ?? "0")}
+                      </td>
+                      <td className="px-5 py-2.5 font-mono text-xs text-text-muted">
+                        {timeStr}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

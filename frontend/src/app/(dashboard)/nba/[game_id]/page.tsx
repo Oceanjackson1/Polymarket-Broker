@@ -1,58 +1,24 @@
 "use client";
 
-import { useState } from "react";
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-
-const MOCK_GAME = {
-  id: "gsw-lal-20260319",
-  homeTeam: "Golden State Warriors",
-  homeTeamShort: "GSW",
-  awayTeam: "Los Angeles Lakers",
-  awayTeamShort: "LAL",
-  homeScore: 94,
-  awayScore: 87,
-  quarter: "Q3",
-  clock: "4:22",
-  homeWinProb: 0.31,
-  awayWinProb: 0.69,
-  lastTrade: 0.69,
-  biasDirection: "HOME_UNDERPRICED" as const,
-  biasMagnitudeBps: 420,
-  aiSuggestion: "Buy GSW @ 0.31",
-  orderBook: {
-    bids: [
-      { price: 0.3, size: 800 },
-      { price: 0.29, size: 1200 },
-      { price: 0.28, size: 600 },
-    ],
-    asks: [
-      { price: 0.32, size: 500 },
-      { price: 0.33, size: 900 },
-      { price: 0.34, size: 400 },
-    ],
-  },
-};
-
-const TIMELINE_PLACEHOLDER = [
-  { time: "Q1 12:00", homeOdds: 0.5, score: "0-0" },
-  { time: "Q1 6:00", homeOdds: 0.45, score: "14-18" },
-  { time: "Q2 12:00", homeOdds: 0.42, score: "28-35" },
-  { time: "Q2 6:00", homeOdds: 0.38, score: "41-52" },
-  { time: "Q3 12:00", homeOdds: 0.35, score: "58-67" },
-  { time: "Q3 4:22", homeOdds: 0.31, score: "94-87" },
-];
+import { use, useState } from "react";
+import { useNbaFusion } from "@/lib/hooks/use-nba";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function SignalBar({ magnitude }: { magnitude: number }) {
+function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <div className={`animate-pulse rounded bg-bg-elevated ${className}`} />
+  );
+}
+
+function SignalBar({ magnitude }: { magnitude: number | null }) {
   // Max meaningful magnitude ~600bps → full bar
-  const pct = Math.min((magnitude / 600) * 100, 100);
+  const pct = Math.min(((magnitude ?? 0) / 600) * 100, 100);
   const bars = Math.round((pct / 100) * 12);
   const filled = "█".repeat(bars);
   const empty = "░".repeat(12 - bars);
-  const label =
-    magnitude > 400 ? "Strong" : magnitude > 200 ? "Moderate" : "Weak";
+  const m = magnitude ?? 0;
+  const label = m > 400 ? "Strong" : m > 200 ? "Moderate" : "Weak";
   return (
     <div className="flex items-center gap-2">
       <span className="font-mono text-sm text-accent-gold">
@@ -66,12 +32,76 @@ function SignalBar({ magnitude }: { magnitude: number }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function NBAGamePage() {
-  const game = MOCK_GAME;
+export default function NBAGamePage({
+  params,
+}: {
+  params: Promise<{ game_id: string }>;
+}) {
+  const { game_id: gameId } = use(params);
+  const { data, isLoading, error } = useNbaFusion(gameId);
   const [tradeSize, setTradeSize] = useState("100");
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-full flex-col gap-0">
+        <div className="border-b border-border-subtle bg-bg-card px-6 py-4">
+          <Skeleton className="h-16 w-full" />
+        </div>
+        <div className="grid grid-cols-2 gap-0 border-b border-border-subtle">
+          <div className="border-r border-border-subtle bg-bg-base p-5">
+            <Skeleton className="h-32 w-full" />
+          </div>
+          <div className="bg-bg-base p-5">
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex min-h-full items-center justify-center p-6">
+        <div className="rounded-lg border border-border-subtle bg-bg-card p-8 text-center">
+          <p className="text-sm text-loss">
+            {error ? "Failed to load game data" : "Game not found"}
+          </p>
+          <p className="mt-1 font-mono text-xs text-text-muted">{gameId}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const homeWinProb = parseFloat(String(data.polymarket.home_win_prob));
+  const awayWinProb = parseFloat(String(data.polymarket.away_win_prob));
+  const lastTrade = parseFloat(String(data.polymarket.last_trade_price));
+  const magnitudeBps = data.bias_signal.magnitude_bps;
+
+  // Derive team abbreviations from game_id (fallback: HOME/AWAY)
+  const parts = gameId.split("-");
+  const homeShort = (parts[0] ?? "HOME").toUpperCase();
+  const awayShort = (parts[1] ?? "AWAY").toUpperCase();
+
+  const TIMELINE_PLACEHOLDER = [
+    { time: "Q1 12:00", homeOdds: 0.5, score: "0-0" },
+    { time: "Q1 6:00", homeOdds: 0.45, score: "14-18" },
+    { time: "Q2 12:00", homeOdds: 0.42, score: "28-35" },
+    { time: "Q2 6:00", homeOdds: 0.38, score: "41-52" },
+    { time: "Q3 12:00", homeOdds: 0.35, score: "58-67" },
+    { time: "Q4 4:22", homeOdds: homeWinProb, score: `${data.score.home}-${data.score.away}` },
+  ];
 
   return (
     <div className="flex min-h-full flex-col gap-0">
+      {/* ── Stale Warning Banner ─────────────────────────── */}
+      {data.stale && (
+        <div className="border-b border-loss/30 bg-loss/10 px-6 py-2">
+          <p className="text-xs text-loss">
+            ⚠ Data may be stale — live feed connection interrupted
+          </p>
+        </div>
+      )}
+
       {/* ── Score Banner ─────────────────────────────────── */}
       <div className="border-b border-border-subtle bg-bg-card px-6 py-4">
         <div className="flex items-center justify-between">
@@ -83,29 +113,29 @@ export default function NBAGamePage() {
           </div>
           <div className="flex flex-1 items-center justify-center gap-8">
             <div className="text-right">
-              <p className="text-sm text-text-secondary">{game.homeTeam}</p>
+              <p className="text-sm text-text-secondary">{homeShort}</p>
               <p className="font-mono text-4xl font-bold text-text-primary">
-                {game.homeScore}
+                {data.score.home}
               </p>
             </div>
             <div className="text-center">
               <p className="font-mono text-xs text-text-muted">
-                {game.quarter}
+                {data.score.quarter}
               </p>
               <p className="font-mono text-2xl font-semibold text-info-cyan">
-                {game.clock}
+                {data.score.time_remaining}
               </p>
             </div>
             <div className="text-left">
-              <p className="text-sm text-text-secondary">{game.awayTeam}</p>
+              <p className="text-sm text-text-secondary">{awayShort}</p>
               <p className="font-mono text-4xl font-bold text-text-primary">
-                {game.awayScore}
+                {data.score.away}
               </p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-xs text-text-muted">Game ID</p>
-            <p className="font-mono text-xs text-text-secondary">{game.id}</p>
+            <p className="font-mono text-xs text-text-secondary">{gameId}</p>
           </div>
         </div>
       </div>
@@ -120,34 +150,34 @@ export default function NBAGamePage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded border border-border-subtle bg-bg-card px-4 py-3">
               <span className="text-sm text-text-secondary">
-                {game.homeTeamShort} Win
+                {homeShort} Win
               </span>
               <div className="text-right">
                 <span className="font-mono text-xl font-bold text-text-primary">
-                  {game.homeWinProb.toFixed(2)}
+                  {homeWinProb.toFixed(2)}
                 </span>
                 <span className="ml-2 font-mono text-sm text-text-muted">
-                  ({(game.homeWinProb * 100).toFixed(0)}%)
+                  ({(homeWinProb * 100).toFixed(0)}%)
                 </span>
               </div>
             </div>
             <div className="flex items-center justify-between rounded border border-border-default bg-bg-card px-4 py-3">
               <span className="text-sm text-text-secondary">
-                {game.awayTeamShort} Win
+                {awayShort} Win
               </span>
               <div className="text-right">
                 <span className="font-mono text-xl font-bold text-text-primary">
-                  {game.awayWinProb.toFixed(2)}
+                  {awayWinProb.toFixed(2)}
                 </span>
                 <span className="ml-2 font-mono text-sm text-text-muted">
-                  ({(game.awayWinProb * 100).toFixed(0)}%)
+                  ({(awayWinProb * 100).toFixed(0)}%)
                 </span>
               </div>
             </div>
             <div className="flex items-center justify-between px-1 pt-1">
               <span className="text-xs text-text-muted">Last Trade</span>
               <span className="font-mono text-sm text-info-cyan">
-                {game.lastTrade.toFixed(2)}
+                {lastTrade.toFixed(2)}
               </span>
             </div>
           </div>
@@ -162,27 +192,31 @@ export default function NBAGamePage() {
             <div className="flex items-center justify-between">
               <span className="text-xs text-text-muted">Direction</span>
               <span className="rounded bg-profit-bg px-2 py-0.5 font-mono text-xs font-semibold text-profit">
-                {game.biasDirection}
+                {data.bias_signal.direction}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-text-muted">Magnitude</span>
               <span className="font-mono text-sm text-accent-gold">
-                +{game.biasMagnitudeBps} bps
+                +{magnitudeBps} bps
               </span>
             </div>
             <div>
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-xs text-text-muted">Signal Strength</span>
               </div>
-              <SignalBar magnitude={game.biasMagnitudeBps} />
+              <SignalBar magnitude={magnitudeBps} />
             </div>
             <div className="rounded border border-accent-gold/20 bg-accent-gold-bg/20 p-3">
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-accent-gold">
                 AI Recommendation
               </p>
               <p className="font-mono text-sm text-text-primary">
-                {game.aiSuggestion}
+                {data.bias_signal.direction === "HOME_UNDERPRICED"
+                  ? `Buy ${homeShort} @ ${homeWinProb.toFixed(2)}`
+                  : data.bias_signal.direction === "AWAY_UNDERPRICED"
+                  ? `Buy ${awayShort} @ ${awayWinProb.toFixed(2)}`
+                  : "No clear trade signal"}
               </p>
             </div>
           </div>
@@ -215,7 +249,7 @@ export default function NBAGamePage() {
           })}
           <div className="absolute right-6 top-1/2 -translate-y-1/2 text-center">
             <p className="text-[10px] text-text-muted">
-              BTC Price × Prediction Probability
+              Away Win Prob × Score Differential
             </p>
             <p className="text-[10px] text-text-muted">
               (dual Y-axis chart placeholder)
@@ -225,7 +259,7 @@ export default function NBAGamePage() {
         <div className="mt-2 flex items-center justify-end gap-4">
           <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
             <span className="inline-block h-2 w-3 rounded-sm bg-info-blue/60" />
-            {game.awayTeamShort} Win Prob
+            {awayShort} Win Prob
           </span>
           <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
             <span className="inline-block h-2 w-3 rounded-sm bg-accent-gold/60" />
@@ -245,9 +279,9 @@ export default function NBAGamePage() {
             <div className="mb-4">
               <p className="mb-1 text-xs text-text-muted">Market</p>
               <p className="font-mono text-sm text-text-primary">
-                Buy {game.homeTeamShort} Win @{" "}
+                Buy {homeShort} Win @{" "}
                 <span className="text-accent-gold">
-                  {game.homeWinProb.toFixed(2)}
+                  {homeWinProb.toFixed(2)}
                 </span>
               </p>
             </div>
@@ -270,7 +304,7 @@ export default function NBAGamePage() {
                   +$
                   {(
                     (parseFloat(tradeSize) || 0) *
-                    ((1 - game.homeWinProb) / game.homeWinProb)
+                    ((1 - homeWinProb) / homeWinProb)
                   ).toFixed(2)}
                 </span>
               </div>
@@ -287,10 +321,10 @@ export default function NBAGamePage() {
           </div>
         </div>
 
-        {/* Order Book */}
+        {/* Order Book — placeholder since no real order book data in fusion */}
         <div className="bg-bg-base p-5">
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-            Order Book — {game.homeTeamShort} Win
+            Order Book — {homeShort} Win
           </p>
           <div className="rounded border border-border-subtle bg-bg-card">
             {/* Header */}
@@ -302,25 +336,23 @@ export default function NBAGamePage() {
                 ASK
               </span>
             </div>
-            {/* Rows */}
+            {/* Synthetic rows from win prob */}
             {[0, 1, 2].map((i) => {
-              const bid = game.orderBook.bids[i];
-              const ask = game.orderBook.asks[i];
+              const bid = homeWinProb - (i + 1) * 0.01;
+              const ask = homeWinProb + (i + 1) * 0.01;
               return (
                 <div
                   key={i}
                   className="grid grid-cols-4 border-b border-border-subtle/50 px-3 py-1.5 text-xs last:border-0"
                 >
                   <span className="font-mono text-profit">
-                    {bid.price.toFixed(2)}
+                    {bid.toFixed(2)}
                   </span>
-                  <span className="font-mono text-text-muted">{bid.size}</span>
+                  <span className="font-mono text-text-muted">—</span>
                   <span className="text-right font-mono text-loss">
-                    {ask.price.toFixed(2)}
+                    {ask.toFixed(2)}
                   </span>
-                  <span className="text-right font-mono text-text-muted">
-                    {ask.size}
-                  </span>
+                  <span className="text-right font-mono text-text-muted">—</span>
                 </div>
               );
             })}
@@ -329,9 +361,7 @@ export default function NBAGamePage() {
               <span className="text-[10px] text-text-muted">
                 Spread:{" "}
                 <span className="font-mono text-text-secondary">
-                  {(
-                    game.orderBook.asks[0].price - game.orderBook.bids[0].price
-                  ).toFixed(2)}
+                  0.02
                 </span>
               </span>
             </div>

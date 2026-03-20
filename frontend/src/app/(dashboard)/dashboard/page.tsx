@@ -3,6 +3,8 @@
 import { useBalance, usePnl, usePositions } from "@/lib/hooks/use-portfolio";
 import { useNbaGames } from "@/lib/hooks/use-nba";
 import { useBtcPredictions } from "@/lib/hooks/use-btc";
+import { useQuery } from "@tanstack/react-query";
+import { analysisApi, type ScanOpportunity } from "@/lib/api";
 import { Shimmer } from "@/components/ui/shimmer";
 
 export default function DashboardPage() {
@@ -11,6 +13,13 @@ export default function DashboardPage() {
   const positions = usePositions();
   const nbaGames = useNbaGames();
   const btcPredictions = useBtcPredictions();
+  const aiScan = useQuery({
+    queryKey: ["analysis", "scan"],
+    queryFn: () => analysisApi.scan(),
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+  const discoveries: ScanOpportunity[] = aiScan.data?.opportunities ?? [];
 
   const totalAssets = balance.data?.balance ?? null;
   const todayPnl = pnl.data?.realized ?? null;
@@ -98,7 +107,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        {/* AI Discoveries — mock data, /analysis/ endpoints not yet built */}
+        {/* AI Discoveries — live from /analysis/scan */}
         <div className="gradient-border-gold col-span-3 rounded-lg border border-accent-gold/20 bg-bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
@@ -108,50 +117,47 @@ export default function DashboardPage() {
               </span>
             </h2>
             <span className="text-xs text-text-muted">
-              3 个定价偏差机会
+              {aiScan.isLoading ? "Scanning…" : `${discoveries.length} 个定价偏差机会`}
             </span>
           </div>
           <div className="space-y-3">
-            {[
-              {
-                market: "GSW vs LAL",
-                signal: "HOME_UNDERPRICED",
-                bps: "+420bps",
-                type: "NBA",
-              },
-              {
-                market: "BTC 5m prediction",
-                signal: "低估",
-                bps: "概率 0.61 vs 模型 0.74",
-                type: "BTC",
-              },
-              {
-                market: "UFC Fight Night",
-                signal: "偏差 >500bps",
-                bps: "赔率与赛前分析偏离",
-                type: "Sports",
-              },
-            ].map((item) => (
-              <div
-                key={item.market}
-                className="flex items-center justify-between rounded border border-border-subtle bg-bg-base p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="rounded bg-bg-elevated px-2 py-0.5 font-mono text-[10px] text-text-muted">
-                    {item.type}
-                  </span>
-                  <span className="text-sm text-text-primary">
-                    {item.market}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="font-mono text-sm text-accent-gold">
-                    {item.signal}
-                  </span>
-                  <span className="text-xs text-text-muted">{item.bps}</span>
-                </div>
+            {aiScan.isLoading ? (
+              <>
+                <Shimmer className="h-12 w-full" />
+                <Shimmer className="h-12 w-full" />
+              </>
+            ) : aiScan.error ? (
+              <div className="rounded border border-border-subtle bg-bg-base p-3 text-sm text-text-muted">
+                AI scan unavailable
               </div>
-            ))}
+            ) : discoveries.length === 0 ? (
+              <div className="rounded border border-border-subtle bg-bg-base p-3 text-sm text-text-muted">
+                No bias opportunities detected
+              </div>
+            ) : (
+              discoveries.slice(0, 5).map((item) => (
+                <div
+                  key={item.market_id}
+                  className="flex items-center justify-between rounded border border-border-subtle bg-bg-base p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="rounded bg-bg-elevated px-2 py-0.5 font-mono text-[10px] text-text-muted">
+                      {item.bias_direction}
+                    </span>
+                    <span className="text-sm text-text-primary">
+                      {item.question
+                        ? item.question.length > 50
+                          ? item.question.slice(0, 50) + "…"
+                          : item.question
+                        : item.market_id}
+                    </span>
+                  </div>
+                  <span className="font-mono text-sm text-accent-gold">
+                    {item.bias_bps > 0 ? "+" : ""}{item.bias_bps}bps
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

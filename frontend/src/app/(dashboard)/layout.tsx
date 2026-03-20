@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 
 const mainNav = [
   { href: "/dashboard", label: "Dashboard", icon: "◫" },
+  { href: "/markets", label: "Markets", icon: "⊞" },
   { href: "/trade", label: "Trade", icon: "⇅" },
 ];
 
@@ -15,10 +16,13 @@ const dataNav = [
   { href: "/nba", label: "NBA Live", icon: "🏀", pro: true },
   { href: "/btc", label: "BTC", icon: "₿", pro: true },
   { href: "/sports", label: "Sports", icon: "⚡", pro: true },
+  { href: "/weather", label: "Weather", icon: "☁", pro: true },
+  { href: "/analysis", label: "AI Analysis", icon: "◇", pro: true },
   { href: "/strategies", label: "Strategies", icon: "◆", pro: true },
 ];
 
 const utilNav = [
+  { href: "/portfolio", label: "Portfolio", icon: "◉" },
   { href: "/orders", label: "Orders", icon: "☰" },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];

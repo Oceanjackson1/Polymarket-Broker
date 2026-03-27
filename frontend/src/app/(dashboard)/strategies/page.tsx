@@ -91,34 +91,57 @@ export default function StrategiesPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-muted">Market</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-text-muted">Current</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-text-muted">Fair Value</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted">Profit</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted">Raw Edge</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted">Fee</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted">Net Edge</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-text-muted">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {opportunities.map((opp) => (
-                  <tr key={opp.market_id} className="border-b border-border-subtle bg-bg-base last:border-0">
-                    <td className="max-w-[250px] truncate px-4 py-3 text-sm text-text-primary">{opp.question}</td>
-                    <td className="px-4 py-3 text-right font-mono text-sm text-text-secondary">
-                      {(opp.current_price * 100).toFixed(1)}¢
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-sm text-text-secondary">
-                      {(opp.fair_value * 100).toFixed(1)}¢
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-sm font-medium text-profit">
-                      +{(opp.profit_bps / 100).toFixed(1)}%
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => executeMutation.mutate({ marketId: opp.market_id, size: 100 })}
-                        disabled={executeMutation.isPending}
-                        className="rounded-md bg-accent-gold px-3 py-1.5 text-xs font-semibold text-bg-base transition-colors hover:bg-accent-gold-hover disabled:opacity-60"
-                      >
-                        {executeMutation.isPending ? "…" : "Execute"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {opportunities.map((opp) => {
+                  const netEdge = opp.adjusted_edge_bps ?? opp.profit_bps;
+                  const isProfitable = netEdge > 0;
+                  return (
+                    <tr key={opp.market_id} className="border-b border-border-subtle bg-bg-base last:border-0">
+                      <td className="max-w-[200px] truncate px-4 py-3 text-sm text-text-primary">
+                        <div className="truncate">{opp.question}</div>
+                        {opp.category && (
+                          <span className="mt-0.5 inline-block rounded bg-bg-elevated px-1.5 py-0.5 font-mono text-[9px] text-text-muted">
+                            {opp.category}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-sm text-text-secondary">
+                        {(opp.current_price * 100).toFixed(1)}¢
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-sm text-text-secondary">
+                        {(opp.fair_value * 100).toFixed(1)}¢
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-sm text-text-secondary">
+                        +{(opp.profit_bps / 100).toFixed(1)}%
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-sm text-loss">
+                        {opp.polymarket_fee_bps != null ? `-${(opp.polymarket_fee_bps / 100).toFixed(1)}%` : "—"}
+                      </td>
+                      <td className={`px-4 py-3 text-right font-mono text-sm font-medium ${isProfitable ? "text-profit" : "text-loss"}`}>
+                        {isProfitable ? "+" : ""}{(netEdge / 100).toFixed(1)}%
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => executeMutation.mutate({ marketId: opp.market_id, size: 100 })}
+                          disabled={executeMutation.isPending || !isProfitable}
+                          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+                            isProfitable
+                              ? "bg-accent-gold text-bg-base hover:bg-accent-gold-hover"
+                              : "bg-bg-elevated text-text-muted cursor-not-allowed"
+                          }`}
+                        >
+                          {executeMutation.isPending ? "…" : isProfitable ? "Execute" : "Unprofitable"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -14,6 +14,8 @@ from api.strategies.schemas import (
 )
 from api.orders.models import Order
 from core.polymarket.gamma_client import GammaClient
+from core.polymarket_fees import resolve_category, calc_taker_fee_bps
+from core.fee_engine import get_fee_rate_bps
 
 router = APIRouter(prefix="/strategies", tags=["strategies"])
 
@@ -82,12 +84,22 @@ async def get_convergence_opportunities(
 
         edge_bps = int((Decimal("1.0") - price) * 10000)
 
+        # Fee-adjusted edge
+        tags = m.get("tags", [])
+        category = resolve_category(tags)
+        poly_fee_bps = calc_taker_fee_bps(category, float(price))
+        broker_bps = get_fee_rate_bps(tier)
+        adjusted_edge = edge_bps - poly_fee_bps - broker_bps
+
         opportunities.append(ConvergenceOpportunity(
             market_id=m["id"],
             question=m.get("question", ""),
             current_price=price,
             estimated_true_prob=Decimal("1.0"),
             edge_bps=edge_bps,
+            category=category,
+            polymarket_fee_bps=poly_fee_bps,
+            adjusted_edge_bps=adjusted_edge,
             expiry=end_date,
             volume=Decimal(str(m.get("volume", 0) or 0)),
         ))

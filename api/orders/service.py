@@ -8,6 +8,7 @@ import redis.asyncio as aioredis
 
 from api.orders.models import Order
 from core.fee_engine import get_fee_rate_bps
+from core.polymarket_fees import resolve_category, calc_taker_fee_bps
 from core.risk_guard import validate_order_size
 from core.polymarket.eip712 import build_order_struct, sign_order_struct
 from core.polymarket.clob_client import ClobClient
@@ -29,6 +30,8 @@ def _order_to_response(order: Order) -> dict:
         "size_remaining": float(order.size) - float(order.size_filled),
         "status": order.status,
         "broker_fee_bps": order.broker_fee_bps,
+        "market_category": order.market_category,
+        "polymarket_fee_bps": order.polymarket_fee_bps,
         "polymarket_order_id": order.polymarket_order_id,
         "mode": order.mode,
         "created_at": order.created_at,
@@ -40,6 +43,21 @@ def _order_to_response(order: Order) -> dict:
 class OrderService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def _resolve_market_category(self, market_id: str) -> str:
+        """Best-effort category lookup from Gamma API. Returns 'other' on failure."""
+        try:
+            from core.polymarket.gamma_client import GammaClient
+            gamma = GammaClient()
+            try:
+                markets = await gamma.get_markets(limit=1, market_id=market_id)
+                if markets:
+                    return resolve_category(markets[0].get("tags", []))
+            finally:
+                await gamma.close()
+        except Exception:
+            pass
+        return "other"
 
     async def place_order(
         self,
@@ -59,6 +77,10 @@ class OrderService:
 
         # 2. Fee injection
         fee_bps = get_fee_rate_bps(tier)
+
+        # 2b. Polymarket platform fee
+        category = await self._resolve_market_category(market_id)
+        poly_fee_bps = calc_taker_fee_bps(category, price)
 
         # 3. Build + sign EIP-712 order struct
         # Polymarket token_ids are always numeric strings; use 0 as fallback for
@@ -102,6 +124,8 @@ class OrderService:
             price=price,
             size=size,
             broker_fee_bps=fee_bps,
+            market_category=category,
+            polymarket_fee_bps=poly_fee_bps,
             polymarket_order_id=polymarket_order_id,
             status="OPEN",
             mode="hosted",

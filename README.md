@@ -42,14 +42,15 @@
 |------|------|
 | Dashboard | 总资产、盈亏、持仓概览 + AI 发现（实时 scan） |
 | Markets | 100+ 市场浏览、搜索、分类筛选、分页 |
-| Trade | 订单簿（WebSocket 实时）+ 下单面板 + 最近成交 |
+| Trade | 订单簿（WebSocket 实时）+ 下单面板（实时费率） + 最近成交 |
 | Portfolio | 5 维统计（余额/可用/锁定/已实现PnL/总PnL）+ 持仓明细 |
 | Orders | 订单历史、状态追踪、一键取消 |
 | NBA Live | 实时比分 × Polymarket 赔率 × ESPN 统计偏差信号 |
 | BTC | 4 时间框架概率预测 + 价格图表 + WebSocket 实时 |
 | Weather | 日期→城市→温度区间，预报概率 vs 市场价格偏差 |
 | AI Analysis | 全市场 scan + 单市场深度分析 + LLM 问答 |
-| Strategies | 收敛套利机会列表 + 一键执行 |
+| Strategies | 收敛套利机会列表（含费率净 edge）+ 一键执行 |
+| Fees | 11 类别费率参数表 + 交互式费率计算器 |
 | Sports | 多运动分类 + 赛事列表 + 历史订单簿 |
 | Settings | 账户信息、API Key 管理（CRUD）、主题 |
 
@@ -200,7 +201,7 @@ ENV_FILE=.env.test pytest tests/ -v
 ENV_FILE=.env.test pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-## API 端点概览（43 REST + 4 WebSocket）
+## API 端点概览（46 REST + 4 WebSocket）
 
 ### 认证 `/api/v1/auth/`
 
@@ -307,9 +308,17 @@ ENV_FILE=.env.test pytest tests/ --cov=. --cov-report=term-missing
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/convergence/opportunities` | 收敛套利机会 |
+| GET | `/convergence/opportunities` | 收敛套利机会（含费率扣除后净 edge） |
 | POST | `/convergence/execute` | 执行套利交易 |
 | GET | `/convergence/positions` | 活跃策略持仓 |
+
+### 费率 `/api/v1/fees/`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/schedule` | 全类别费率参数表（11 类 × feeRate/exponent/makerRebate） |
+| GET | `/estimate` | 实时费率估算（类别+价格+金额 → broker+平台费用明细） |
+| GET | `/market/{token_id}` | 指定市场自动检测类别 + midpoint 费率计算 |
 
 ## 项目结构
 
@@ -320,8 +329,9 @@ Polymarket-Broker/
 │   ├── markets/                  # 市场查询
 │   ├── orders/                   # 订单管理
 │   ├── portfolio/                # 投资组合
-│   ├── analysis/                 # AI 分析
-│   ├── strategies/               # 交易策略
+│   ├── analysis/                 # AI 分析（含费率扣除后净 bias）
+│   ├── strategies/               # 交易策略（含费率扣除后净 edge）
+│   ├── fees/                     # 实时费率查询（11 类别 × 动态价格）
 │   ├── data/                     # 数据端点
 │   │   ├── sports/               # 体育数据
 │   │   ├── nba/                  # NBA 数据

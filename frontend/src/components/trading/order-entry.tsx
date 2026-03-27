@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { feesApi } from "@/lib/api";
 
 interface OrderEntryProps {
   marketId: string;
   defaultPrice?: number;
+  category?: string;
 }
 
-const FEE_BPS = 20; // 20 bps platform fee
-
-export default function OrderEntry({ defaultPrice = 0.75 }: OrderEntryProps) {
+export default function OrderEntry({ defaultPrice = 0.75, category = "other" }: OrderEntryProps) {
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
   const [price, setPrice] = useState<string>(defaultPrice.toFixed(3));
   const [size, setSize] = useState<string>("");
@@ -18,15 +19,33 @@ export default function OrderEntry({ defaultPrice = 0.75 }: OrderEntryProps) {
   const priceNum = parseFloat(price) || 0;
   const sizeNum = parseFloat(size) || 0;
   const total = priceNum * sizeNum;
-  const fee = total * (FEE_BPS / 10000);
 
+  const validPrice = priceNum > 0 && priceNum < 1;
+
+  const { data: feeEstimate } = useQuery({
+    queryKey: ["fee-estimate", category, price, total],
+    queryFn: () =>
+      feesApi.estimate({
+        category,
+        price: priceNum,
+        volume: total > 0 ? total : 100,
+      }),
+    enabled: validPrice,
+    staleTime: 60_000,
+  });
+
+  const feeDisplay = useMemo(() => {
+    if (!feeEstimate) return { polyBps: 0, brokerBps: 0, totalBps: 0, feeAmount: 0 };
+    return {
+      polyBps: feeEstimate.polymarket_fee_bps,
+      brokerBps: feeEstimate.broker_fee_bps,
+      totalBps: feeEstimate.total_fee_bps,
+      feeAmount: total > 0 ? total * (feeEstimate.total_fee_bps / 10_000) : 0,
+    };
+  }, [feeEstimate, total]);
+
+  const isValid = validPrice && sizeNum > 0 && !isNaN(priceNum) && !isNaN(sizeNum);
   const isBuy = side === "BUY";
-  const isValid =
-    priceNum > 0 &&
-    priceNum < 1 &&
-    sizeNum > 0 &&
-    !isNaN(priceNum) &&
-    !isNaN(sizeNum);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +56,6 @@ export default function OrderEntry({ defaultPrice = 0.75 }: OrderEntryProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Panel header */}
       <div className="border-b border-border-subtle px-4 py-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
           Order Entry
@@ -113,17 +131,35 @@ export default function OrderEntry({ defaultPrice = 0.75 }: OrderEntryProps) {
             </span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-text-muted">Fee ({FEE_BPS} bps)</span>
+            <span className="text-text-muted">
+              Poly Fee ({feeDisplay.polyBps} bps)
+            </span>
             <span className="font-mono text-text-muted">
-              ${fee.toFixed(4)}
+              ${(total * (feeDisplay.polyBps / 10_000)).toFixed(4)}
+            </span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-text-muted">
+              Broker Fee ({feeDisplay.brokerBps} bps)
+            </span>
+            <span className="font-mono text-text-muted">
+              ${(total * (feeDisplay.brokerBps / 10_000)).toFixed(4)}
             </span>
           </div>
           <div className="flex justify-between border-t border-border-subtle pt-1.5 text-xs">
             <span className="text-text-muted">Net Cost</span>
             <span className="font-mono text-text-primary">
-              ${(total + fee).toFixed(2)}
+              ${(total + feeDisplay.feeAmount).toFixed(2)}
             </span>
           </div>
+          {feeEstimate && total > 0 && (
+            <div className="flex justify-between text-xs">
+              <span className="text-text-muted">Profit if Win</span>
+              <span className={`font-mono ${feeEstimate.net_profit_if_win >= 0 ? "text-profit" : "text-loss"}`}>
+                ${feeEstimate.net_profit_if_win.toFixed(2)}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Submit */}
@@ -143,7 +179,6 @@ export default function OrderEntry({ defaultPrice = 0.75 }: OrderEntryProps) {
             : `Place ${side} Order`}
         </button>
 
-        {/* Disclaimer */}
         <p className="text-center text-[10px] text-text-muted">
           Paper trading · No real funds
         </p>

@@ -25,6 +25,8 @@ class Order(Base):
     size_filled: Mapped[Decimal] = mapped_column(Numeric(18, 6), default=Decimal("0"))
     status: Mapped[str] = mapped_column(String(20), default="PENDING", nullable=False)
     broker_fee_bps: Mapped[int] = mapped_column(Integer, nullable=False)
+    market_category: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    polymarket_fee_bps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     polymarket_order_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

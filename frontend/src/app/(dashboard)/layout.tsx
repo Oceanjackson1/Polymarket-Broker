@@ -24,6 +24,7 @@ const dataNav = [
 const utilNav = [
   { href: "/portfolio", label: "Portfolio", icon: "◉" },
   { href: "/orders", label: "Orders", icon: "☰" },
+  { href: "/fees", label: "Fees", icon: "%" },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];
 

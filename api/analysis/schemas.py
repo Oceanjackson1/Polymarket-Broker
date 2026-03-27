@@ -15,6 +15,9 @@ class MarketAnalysisResponse(BaseModel):
     ai_reasoning: str
     bias_direction: str | None  # AI_HIGHER, MARKET_HIGHER, NEUTRAL
     bias_bps: int | None
+    category: str | None = None
+    polymarket_fee_bps: int | None = None
+    net_bias_bps: int | None = None
     model: str
     analyzed_at: datetime
 
@@ -22,6 +25,7 @@ class MarketAnalysisResponse(BaseModel):
 class ScanRequest(BaseModel):
     category: str | None = None  # e.g. "sports", "crypto", "politics"
     min_bias_bps: int = 500
+    min_net_bias_bps: int | None = None  # filter by post-fee profitability
     limit: int = 10
 
 

@@ -21,6 +21,7 @@ from api.analysis.prompts import (
 from core.ai.deepseek_client import DeepSeekClient
 from core.ai.quota import check_and_increment_quota
 from core.config import get_settings
+from core.polymarket_fees import resolve_category, calc_taker_fee_bps
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -120,6 +121,12 @@ async def analyze_market(
         else:
             bias_direction = "MARKET_HIGHER"
 
+    # Fee-adjusted bias
+    tags = market.get("tags", [])
+    detected_category = resolve_category(tags)
+    poly_fee_bps = calc_taker_fee_bps(detected_category, price) if price else None
+    net_bias = (bias_bps - poly_fee_bps) if bias_bps is not None and poly_fee_bps is not None else None
+
     return MarketAnalysisResponse(
         market_id=market_id,
         question=question,
@@ -128,6 +135,9 @@ async def analyze_market(
         ai_reasoning=reasoning,
         bias_direction=bias_direction,
         bias_bps=bias_bps,
+        category=detected_category,
+        polymarket_fee_bps=poly_fee_bps,
+        net_bias_bps=net_bias,
         model=settings.deepseek_model,
         analyzed_at=datetime.now(UTC),
     )

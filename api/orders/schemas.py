@@ -25,6 +25,8 @@ class OrderResponse(BaseModel):
     size_remaining: float
     status: str
     broker_fee_bps: int
+    market_category: str | None = None
+    polymarket_fee_bps: int | None = None
     polymarket_order_id: str | None
     mode: str
     created_at: datetime

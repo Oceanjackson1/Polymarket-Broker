@@ -321,6 +321,39 @@ export interface AskResponse {
   sources?: string[];
 }
 
+// ─── Fees Types ─────────────────────────────────────────────────────────────
+
+export interface CategoryFeeInfo {
+  category: string;
+  fee_rate: number;
+  exponent: number;
+  maker_rebate: number;
+  poly_retention: number;
+  fee_at_p50: number;
+  fee_at_p80: number;
+  fee_at_p95: number;
+}
+
+export interface FeeScheduleResponse {
+  formula: string;
+  categories: CategoryFeeInfo[];
+}
+
+export interface FeeEstimateResponse {
+  category: string;
+  price: number;
+  volume: number;
+  polymarket_fee_rate: number;
+  polymarket_fee_bps: number;
+  polymarket_fee_amount: number;
+  broker_fee_bps: number;
+  broker_fee_amount: number;
+  total_fee_amount: number;
+  total_fee_bps: number;
+  gross_profit_if_win: number;
+  net_profit_if_win: number;
+}
+
 // ─── Strategies Types ────────────────────────────────────────────────────────
 
 export interface ConvergenceOpportunity {
@@ -329,6 +362,9 @@ export interface ConvergenceOpportunity {
   current_price: number;
   fair_value: number;
   profit_bps: number;
+  category?: string;
+  polymarket_fee_bps?: number;
+  adjusted_edge_bps?: number;
 }
 
 export interface ConvergencePosition {
@@ -564,6 +600,28 @@ export const analysisApi = {
       method: "POST",
       body: JSON.stringify({ question }),
     }),
+};
+
+// ─── Fees API ────────────────────────────────────────────────────────────────
+
+export const feesApi = {
+  schedule: (): Promise<FeeScheduleResponse> =>
+    apiFetch<FeeScheduleResponse>("/fees/schedule"),
+
+  estimate: (params: {
+    category: string;
+    price: number;
+    volume?: number;
+    tier?: string;
+  }): Promise<FeeEstimateResponse> => {
+    const qs = new URLSearchParams({
+      category: params.category,
+      price: String(params.price),
+      ...(params.volume !== undefined ? { volume: String(params.volume) } : {}),
+      ...(params.tier ? { tier: params.tier } : {}),
+    }).toString();
+    return apiFetch<FeeEstimateResponse>(`/fees/estimate?${qs}`);
+  },
 };
 
 // ─── Strategies API ──────────────────────────────────────────────────────────

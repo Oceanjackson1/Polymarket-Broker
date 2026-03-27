@@ -17,6 +17,9 @@ class ConvergenceOpportunity(BaseModel):
     current_price: Decimal
     estimated_true_prob: Decimal
     edge_bps: int
+    category: str | None = None
+    polymarket_fee_bps: int | None = None
+    adjusted_edge_bps: int | None = None
     expiry: datetime | None
     volume: Decimal | None
 

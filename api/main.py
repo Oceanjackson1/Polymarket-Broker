@@ -27,6 +27,8 @@ from api.fees.router import router as fees_router
 from api.webhooks.router import router as webhooks_router
 from api.developer.router import router as developer_router
 from api.ws.router import router as ws_router
+from tg_agent.webhook import router as tg_webhook_router
+from api.agent.router import router as agent_router
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -112,6 +114,42 @@ async def lifespan(app: FastAPI):
             if wallets:
                 tasks.append(asyncio.create_task(WalletTracker(dome_client, wallets).run(AsyncSessionLocal)))
 
+    # ── Telegram Bot + Agent Orchestrator (optional) ──
+    try:
+        from tg_agent.factory import build_orchestrator, build_registry
+        from openai import AsyncOpenAI
+
+        ai_client = AsyncOpenAI(
+            api_key=settings.deepseek_api_key,
+            base_url=settings.deepseek_base_url,
+        )
+        app.state.capability_registry = build_registry()
+        app.state.agent_orchestrator = build_orchestrator(
+            ai_client=ai_client, model=settings.deepseek_model,
+        )
+
+        if settings.tg_bot_token:
+            from tg_agent.bot import create_bot
+
+            bot, dp = create_bot(settings.tg_bot_token)
+            dp["orchestrator"] = app.state.agent_orchestrator
+            dp["miniapp_url"] = settings.tg_miniapp_url
+
+            app.state.tg_bot = bot
+            app.state.tg_dispatcher = dp
+            app.state.tg_webhook_secret = settings.tg_webhook_secret
+
+            if settings.tg_webhook_url:
+                await bot.set_webhook(
+                    url=settings.tg_webhook_url,
+                    secret_token=settings.tg_webhook_secret,
+                )
+                logger.info("telegram bot webhook set: %s", settings.tg_webhook_url)
+            else:
+                logger.info("telegram bot ready (no webhook URL — use polling for dev)")
+    except Exception:
+        logger.warning("failed to initialise telegram agent", exc_info=True)
+
     yield
 
     # ── Shutdown ──
@@ -128,6 +166,10 @@ async def lifespan(app: FastAPI):
     binance_ob = getattr(app.state, "binance_ob_client", None)
     if binance_ob:
         await binance_ob.close()
+
+    tg_bot = getattr(app.state, "tg_bot", None)
+    if tg_bot:
+        await tg_bot.session.close()
 
     await app.state.redis.aclose()
 
@@ -172,3 +214,5 @@ app.include_router(fees_router, prefix=settings.api_v1_prefix)
 app.include_router(webhooks_router, prefix=settings.api_v1_prefix)
 app.include_router(developer_router, prefix=settings.api_v1_prefix)
 app.include_router(ws_router)  # No prefix — WebSocket paths start with /ws/
+app.include_router(tg_webhook_router)
+app.include_router(agent_router, prefix=settings.api_v1_prefix)

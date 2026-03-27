@@ -11,6 +11,7 @@ from tg_agent.tg_formatters import (
     format_error,
 )
 from tg_agent.keyboards import portfolio_keyboard
+from tg_agent.callbacks import router as callback_router
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -127,5 +128,6 @@ async def handle_text(message: Message, orchestrator: AgentOrchestrator):
 def create_bot(token: str) -> tuple[Bot, Dispatcher]:
     bot = Bot(token=token)
     dp = Dispatcher()
+    dp.include_router(callback_router)
     dp.include_router(router)
     return bot, dp

@@ -12,6 +12,7 @@ passlib[bcrypt]==1.7.4
 eth-account==0.11.0
 websockets>=13.0
 openai>=1.0.0
+aiogram==3.15.0
 
 # Test
 pytest==8.3.2

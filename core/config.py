@@ -77,6 +77,13 @@ class Settings(BaseSettings):
     deepseek_model: str = "deepseek-chat"
     analysis_daily_quota_free: int = 10
 
+    # Telegram Bot
+    tg_bot_token: str = ""
+    tg_webhook_secret: str = ""  # random string to verify webhook origin
+    tg_webhook_url: str = ""     # e.g. https://api.polydesk.eu.cc/api/v1/agent/tg-webhook
+    tg_admin_chat_ids: str = ""  # comma-separated admin chat IDs
+    tg_miniapp_url: str = ""     # e.g. https://polydesk.eu.cc/tg
+
     # App
     environment: str = "development"
     api_v1_prefix: str = "/api/v1"

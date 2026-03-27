@@ -29,6 +29,7 @@ from api.developer.router import router as developer_router
 from api.ws.router import router as ws_router
 from tg_agent.webhook import router as tg_webhook_router
 from api.agent.router import router as agent_router
+from api.agent.tg_auth import router as tg_auth_router
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -216,3 +217,4 @@ app.include_router(developer_router, prefix=settings.api_v1_prefix)
 app.include_router(ws_router)  # No prefix — WebSocket paths start with /ws/
 app.include_router(tg_webhook_router)
 app.include_router(agent_router, prefix=settings.api_v1_prefix)
+app.include_router(tg_auth_router, prefix=settings.api_v1_prefix)

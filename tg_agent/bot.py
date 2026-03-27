@@ -68,6 +68,37 @@ async def cmd_portfolio(message: Message, orchestrator: AgentOrchestrator, minia
     await message.answer(text, reply_markup=portfolio_keyboard(miniapp_url))
 
 
+@router.message(Command("bind"))
+async def cmd_bind(message: Message):
+    """Link TG account to Broker via API key."""
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer(
+            "Usage: /bind YOUR_API_KEY\n\n"
+            "Get your API key from the web dashboard."
+        )
+        return
+
+    api_key = parts[1].strip()
+
+    from tg_agent.auth import bind_chat_to_user
+    from api.auth.service import AuthService
+    from db.postgres import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as db:
+        auth_svc = AuthService(db)
+        user = await auth_svc.validate_api_key(api_key)
+        if not user:
+            await message.answer("Invalid API key. Please check and try again.")
+            return
+
+        await bind_chat_to_user(db, chat_id=message.chat.id, user_id=user["user_id"])
+        await message.answer(
+            "Account linked! You can now use all trading features.\n"
+            "Try /portfolio or ask me anything about markets."
+        )
+
+
 @router.message(F.text)
 async def handle_text(message: Message, orchestrator: AgentOrchestrator):
     """Catch-all: parse natural language via orchestrator."""

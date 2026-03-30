@@ -28,7 +28,7 @@ class UserResponse(BaseModel):
 
 class ApiKeyCreateRequest(BaseModel):
     name: str
-    scopes: list[str] = ["markets:read"]
+    scopes: list[str] = []
 
 
 class ApiKeyCreatedResponse(BaseModel):
@@ -44,9 +44,9 @@ class ApiKeyCreatedResponse(BaseModel):
 class ApiKeyListItem(BaseModel):
     id: str
     name: str
+    key: str
     key_hint: str
     scopes: list[str]
     is_active: bool
     created_at: datetime
     last_used_at: datetime | None
-    model_config = {"from_attributes": True}

@@ -1,9 +1,7 @@
 import Link from "next/link";
 
 const navLinks = [
-  { href: "/markets", label: "Markets" },
   { href: "/docs", label: "Docs" },
-  { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ];
 
@@ -65,7 +63,7 @@ export default function MarketingLayout({
                 Product
               </h3>
               <ul className="space-y-3">
-                {["Markets", "Dashboard", "Pricing"].map((t) => (
+                {["Console", "Pricing"].map((t) => (
                   <li key={t}>
                     <Link href={`/${t.toLowerCase()}`} className="text-sm text-white/40 transition-colors hover:text-white">
                       {t}

@@ -90,8 +90,13 @@ async def analyze_market(
     market = markets[0]
 
     question = market.get("question", "Unknown")
-    prices = market.get("outcomePrices", [])
-    price = float(prices[0]) if prices else None
+    raw_prices = market.get("outcomePrices", [])
+    if isinstance(raw_prices, str):
+        try:
+            raw_prices = json.loads(raw_prices)
+        except (json.JSONDecodeError, ValueError):
+            raw_prices = []
+    price = float(raw_prices[0]) if raw_prices else None
     category = ", ".join(market.get("tags", []))
 
     user_prompt = MARKET_ANALYSIS_USER.format(
@@ -173,8 +178,13 @@ async def scan_markets(
     # Build summary for AI
     market_summary = []
     for m in markets[:20]:  # limit to 20 for token budget
-        prices = m.get("outcomePrices", [])
-        price = float(prices[0]) if prices else None
+        raw_prices = m.get("outcomePrices", [])
+        if isinstance(raw_prices, str):
+            try:
+                raw_prices = json.loads(raw_prices)
+            except (json.JSONDecodeError, ValueError):
+                raw_prices = []
+        price = float(raw_prices[0]) if raw_prices else None
         market_summary.append(f"- {m['id']}: \"{m.get('question', '?')}\" (price={price})")
 
     user_prompt = f"Markets to scan (find mispriced ones, min {body.min_bias_bps} bps bias):\n" + "\n".join(market_summary)

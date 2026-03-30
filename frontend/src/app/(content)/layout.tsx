@@ -1,9 +1,7 @@
 import Link from "next/link";
 
 const navLinks = [
-  { href: "/markets", label: "Markets" },
   { href: "/docs", label: "API Docs" },
-  { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ];
 
@@ -65,7 +63,7 @@ export default function ContentLayout({
                 Product
               </h3>
               <ul className="space-y-3">
-                {["Markets", "Dashboard", "Pricing"].map((t) => (
+                {["Console", "Pricing"].map((t) => (
                   <li key={t}>
                     <Link
                       href={`/${t.toLowerCase()}`}

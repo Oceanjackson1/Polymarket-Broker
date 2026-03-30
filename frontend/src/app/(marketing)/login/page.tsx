@@ -31,7 +31,7 @@ export default function LoginPage() {
         },
         body: JSON.stringify({
           name: "browser-session",
-          scopes: ["data:read", "markets:read", "orders:write", "portfolio:read"],
+          scopes: ["data:read", "markets:read", "orders:write", "portfolio:read", "analysis:read", "strategies:execute", "webhooks:write"],
         }),
       });
 
@@ -52,7 +52,7 @@ export default function LoginPage() {
       document.cookie = `pm_api_key=${encodeURIComponent(keyData.key)}; path=/; SameSite=Lax`;
 
       // Step 4: Redirect to dashboard
-      router.push("/dashboard");
+      router.push("/console");
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 401 || err.status === 422) {

@@ -10,7 +10,7 @@ from eth_account.messages import encode_defunct
 
 from api.auth.models import User, ApiKey, RefreshToken
 from core.security import (
-    encrypt_api_key,
+    encrypt_api_key, decrypt_api_key,
     create_access_token, create_refresh_token,
     decode_refresh_token,
     generate_api_key_value,
@@ -71,11 +71,23 @@ class AuthService:
         await self.db.refresh(key)
         return {**{c.name: getattr(key, c.name) for c in key.__table__.columns}, "key": raw_key}
 
-    async def list_api_keys(self, user_id: str) -> list[ApiKey]:
+    async def list_api_keys(self, user_id: str) -> list[dict]:
         result = await self.db.execute(
             select(ApiKey).where(ApiKey.user_id == user_id, ApiKey.is_active == True)
         )
-        return list(result.scalars().all())
+        keys = []
+        for k in result.scalars().all():
+            keys.append({
+                "id": k.id,
+                "name": k.name,
+                "key": decrypt_api_key(k.key_encrypted),
+                "key_hint": k.key_hint,
+                "scopes": k.scopes,
+                "is_active": k.is_active,
+                "created_at": k.created_at,
+                "last_used_at": k.last_used_at,
+            })
+        return keys
 
     async def resolve_api_key(self, raw_key: str):
         """Look up an ApiKey row by hashing the submitted raw key. Returns None if not found."""

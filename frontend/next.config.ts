@@ -10,6 +10,20 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/:path*',
+        destination: '/console',
+        permanent: true,
+      },
+      {
+        source: '/dashboard',
+        destination: '/console',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 const withMDX = createMDX();

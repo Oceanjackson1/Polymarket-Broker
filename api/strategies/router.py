@@ -62,10 +62,16 @@ async def get_convergence_opportunities(
     opportunities = []
 
     for m in markets:
-        prices = m.get("outcomePrices", [])
-        if not prices:
+        raw_prices = m.get("outcomePrices", [])
+        if isinstance(raw_prices, str):
+            import json
+            try:
+                raw_prices = json.loads(raw_prices)
+            except (json.JSONDecodeError, ValueError):
+                raw_prices = []
+        if not raw_prices:
             continue
-        price = Decimal(str(prices[0]))
+        price = Decimal(str(raw_prices[0]))
         if price < CONVERGENCE_MIN_PROB:
             continue
 

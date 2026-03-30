@@ -1,4 +1,6 @@
+import hashlib
 import time
+from datetime import datetime, UTC
 from starlette.types import ASGIApp, Scope, Receive, Send
 from starlette.datastructures import MutableHeaders
 from starlette.responses import JSONResponse
@@ -18,12 +20,25 @@ async def _get_redis(app):
     override = app.dependency_overrides.get(get_redis)
     if override is not None:
         result = override()
-        # override may be a sync callable returning a coroutine or the client directly
         import inspect
         if inspect.isawaitable(result):
             return await result
         return result
     return None
+
+
+async def _resolve_user_id(redis, api_key_raw: str) -> str | None:
+    """Resolve X-API-Key to user_id via key_hash lookup in DB."""
+    from sqlalchemy import select
+    from api.auth.models import ApiKey
+    from db.postgres import AsyncSessionLocal
+
+    key_hash = hashlib.sha256(api_key_raw.encode()).hexdigest()
+    async with AsyncSessionLocal() as db:
+        row = await db.scalar(
+            select(ApiKey).where(ApiKey.key_hash == key_hash, ApiKey.is_active == True)
+        )
+        return row.user_id if row else None
 
 
 class RateLimitMiddleware:
@@ -43,6 +58,7 @@ class RateLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
+        # --- IP-based rate limiting (existing) ---
         ip = request.client.host if request.client else "unknown"
         day_key = f"ratelimit:ip:{ip}:calls"
 
@@ -71,6 +87,21 @@ class RateLimitMiddleware:
             )
             await response(scope, receive, send)
             return
+
+        # --- Per-user usage tracking (for /developer/usage) ---
+        api_key_raw = request.headers.get("x-api-key")
+        if api_key_raw:
+            try:
+                user_id = await _resolve_user_id(redis, api_key_raw)
+                if user_id:
+                    today = datetime.now(UTC).strftime("%Y-%m-%d")
+                    user_key = f"rate_limit:{user_id}:{today}"
+                    await redis.incr(user_key)
+                    current_ttl = await redis.ttl(user_key)
+                    if current_ttl < 0:
+                        await redis.expire(user_key, 86400)
+            except Exception:
+                pass  # Don't block request if tracking fails
 
         # Intercept send to inject headers into the response
         rl_headers = {

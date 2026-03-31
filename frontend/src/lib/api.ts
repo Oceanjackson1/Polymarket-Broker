@@ -107,6 +107,12 @@ export interface UsageResponse {
 export const authApi = {
   me: (): Promise<UserResponse> => apiFetch<UserResponse>("/auth/me"),
 
+  updateProfile: (data: { display_name?: string }): Promise<UserResponse> =>
+    apiFetch<UserResponse>("/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
   apiKeys: (): Promise<ApiKeyListItem[]> =>
     apiFetch<ApiKeyListItem[]>("/auth/keys"),
 

@@ -122,6 +122,26 @@ async def get_me(
     return user
 
 
+class UpdateProfileRequest(BaseModel):
+    display_name: str | None = None
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    body: UpdateProfileRequest,
+    user_id: str = Depends(_resolve_user_id_flexible),
+    db: AsyncSession = Depends(get_session),
+):
+    user = await db.scalar(select(User).where(User.id == user_id))
+    if not user:
+        raise HTTPException(404, detail="USER_NOT_FOUND")
+    if body.display_name is not None:
+        user.display_name = body.display_name.strip()[:200]
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
 @router.get("/keys", response_model=list[ApiKeyListItem])
 async def list_keys(
     user_id: str = Depends(_resolve_user_id_flexible),

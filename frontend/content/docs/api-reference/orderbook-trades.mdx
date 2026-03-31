@@ -1,0 +1,125 @@
+---
+title: Orderbook & Trades
+description: Real-time order book, recent trades, and mid prices for Polymarket markets.
+---
+
+# Orderbook & Trades
+
+Base path: `/api/v1/markets`
+
+Retrieve live order book depth, recent trade history, and current mid-point prices for any Polymarket market.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/markets/\{market_id\}/orderbook` | Real-time order book for a market | API Key |
+| `GET` | `/markets/\{market_id\}/trades` | Recent trades for a market | API Key |
+| `GET` | `/markets/\{market_id\}/midpoint` | Current mid price | API Key |
+
+---
+
+## GET /markets/\{market_id\}/orderbook
+
+Returns the real-time order book (bids and asks) for a specific market. You must provide the `token_id` to identify which outcome token's book to retrieve.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `market_id` | string | Yes | The market identifier |
+
+**Query parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `token_id` | string | Yes | The outcome token ID for the desired side of the market |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/markets/0x1234/orderbook?token_id=71321045" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "market_id": "0x1234",
+  "token_id": "71321045",
+  "bids": [
+    { "price": 0.52, "size": 1500.0 },
+    { "price": 0.51, "size": 3200.0 }
+  ],
+  "asks": [
+    { "price": 0.53, "size": 1200.0 },
+    { "price": 0.54, "size": 2800.0 }
+  ],
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```
+
+---
+
+## GET /markets/\{market_id\}/trades
+
+Returns recent executed trades for a market.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `market_id` | string | Yes | The market identifier |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/markets/0x1234/trades" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "market_id": "0x1234",
+  "trades": [
+    {
+      "id": "t_001",
+      "price": 0.525,
+      "size": 500.0,
+      "side": "buy",
+      "timestamp": "2026-03-31T11:59:45Z"
+    },
+    {
+      "id": "t_002",
+      "price": 0.523,
+      "size": 200.0,
+      "side": "sell",
+      "timestamp": "2026-03-31T11:59:30Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /markets/\{market_id\}/midpoint
+
+Returns the current mid price (average of best bid and best ask) for a market.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `market_id` | string | Yes | The market identifier |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/markets/0x1234/midpoint" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "market_id": "0x1234",
+  "midpoint": 0.525,
+  "best_bid": 0.52,
+  "best_ask": 0.53,
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```

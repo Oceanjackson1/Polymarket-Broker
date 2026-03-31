@@ -1,0 +1,205 @@
+---
+title: Weather Forecasts
+description: 51-member ensemble forecasts for 20+ cities matched to Polymarket temperature markets
+---
+
+# Weather Forecasts
+
+Base path: `/api/v1/data/weather`
+
+51-member ensemble weather forecasts for 20+ major cities, aligned to Polymarket temperature prediction markets. Each temperature bin shows the forecast probability, the current market price, and the bias between them.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/weather/dates` | Active dates with weather markets | API Key |
+| `GET` | `/data/weather/dates/\{event_date\}/cities` | Cities with markets on a given date | API Key |
+| `GET` | `/data/weather/dates/\{event_date\}/cities/\{city\}/fusion` | Forecast probability vs. market price per temperature bin | API Key |
+| `GET` | `/data/weather/dates/\{event_date\}/cities/\{city\}/orderbook` | Orderbook for a weather market | API Key |
+
+---
+
+## GET /data/weather/dates
+
+Returns all dates that have active Polymarket weather markets.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/data/weather/dates \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "dates": [
+    { "event_date": "2026-04-01", "city_count": 22, "total_markets": 88 },
+    { "event_date": "2026-04-02", "city_count": 20, "total_markets": 80 }
+  ]
+}
+```
+
+---
+
+## GET /data/weather/dates/\{event_date\}/cities
+
+Returns all cities with weather markets on a given date, sorted by the maximum bias between forecast and market price.
+
+**Path parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `event_date` | string | Date in `YYYY-MM-DD` format |
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/data/weather/dates/2026-04-01/cities \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "event_date": "2026-04-01",
+  "cities": [
+    {
+      "city": "chicago",
+      "label": "Chicago, IL",
+      "max_bias_bps": 1250,
+      "bin_count": 4,
+      "total_volume": 82000.00
+    },
+    {
+      "city": "new-york",
+      "label": "New York, NY",
+      "max_bias_bps": 870,
+      "bin_count": 4,
+      "total_volume": 145000.00
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/weather/dates/\{event_date\}/cities/\{city\}/fusion
+
+Returns the fusion view for a city on a given date: for each temperature bin, the ensemble forecast probability, the current Polymarket price, and the bias between them.
+
+**Path parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `event_date` | string | Date in `YYYY-MM-DD` format |
+| `city` | string | City slug (e.g. `chicago`, `new-york`) |
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/data/weather/dates/2026-04-01/cities/chicago/fusion \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "event_date": "2026-04-01",
+  "city": "chicago",
+  "label": "Chicago, IL",
+  "ensemble_members": 51,
+  "bins": [
+    {
+      "bin": "<=40F",
+      "forecast_prob": 0.12,
+      "market_price": 0.08,
+      "bias_bps": 400,
+      "direction": "underpriced",
+      "token_id": "0xabc001",
+      "volume": 18000.00
+    },
+    {
+      "bin": "41-50F",
+      "forecast_prob": 0.35,
+      "market_price": 0.38,
+      "bias_bps": -300,
+      "direction": "overpriced",
+      "token_id": "0xabc002",
+      "volume": 32000.00
+    },
+    {
+      "bin": "51-60F",
+      "forecast_prob": 0.41,
+      "market_price": 0.42,
+      "bias_bps": -100,
+      "direction": "overpriced",
+      "token_id": "0xabc003",
+      "volume": 22000.00
+    },
+    {
+      "bin": ">=61F",
+      "forecast_prob": 0.12,
+      "market_price": 0.12,
+      "bias_bps": 0,
+      "direction": "fair",
+      "token_id": "0xabc004",
+      "volume": 10000.00
+    }
+  ],
+  "forecast_updated_at": "2026-03-31T06:00:00Z",
+  "prices_updated_at": "2026-03-31T12:00:05Z"
+}
+```
+
+---
+
+## GET /data/weather/dates/\{event_date\}/cities/\{city\}/orderbook
+
+Returns the orderbook for a specific weather market in a city.
+
+**Path parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `event_date` | string | Date in `YYYY-MM-DD` format |
+| `city` | string | City slug |
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `token_id` | string | No | Filter to a specific temperature bin token. If omitted, returns all bins. |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/weather/dates/2026-04-01/cities/chicago/orderbook?token_id=0xabc001" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "event_date": "2026-04-01",
+  "city": "chicago",
+  "token_id": "0xabc001",
+  "bin": "<=40F",
+  "midpoint": 0.08,
+  "spread": 0.02,
+  "bids": [
+    { "price": 0.07, "size": 2500.00 },
+    { "price": 0.06, "size": 5000.00 }
+  ],
+  "asks": [
+    { "price": 0.09, "size": 1800.00 },
+    { "price": 0.10, "size": 4200.00 }
+  ],
+  "timestamp": "2026-03-31T12:00:05Z"
+}
+```

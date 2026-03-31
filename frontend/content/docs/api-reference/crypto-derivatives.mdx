@@ -1,0 +1,312 @@
+---
+title: Crypto Derivatives
+description: Funding rates, open interest, liquidations, and sentiment data from CoinGlass
+---
+
+# Crypto Derivatives
+
+Base path: `/api/v1/data/crypto`
+
+Real-time and historical crypto derivatives data sourced from CoinGlass. Covers BTC, ETH, SOL across major exchanges including Binance, Bybit, OKX, and dYdX.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/crypto/funding-rates` | Aggregated funding rates (avg/min/max + per-exchange) | API Key |
+| `GET` | `/data/crypto/funding-rates/history` | Historical funding rates | API Key |
+| `GET` | `/data/crypto/open-interest` | Open interest total + changes across timeframes | API Key |
+| `GET` | `/data/crypto/open-interest/history` | Open interest history | API Key |
+| `GET` | `/data/crypto/liquidations` | Liquidation data (long/short breakdown) | API Key |
+| `GET` | `/data/crypto/taker-volume` | Buy/sell ratio and taker volumes | API Key |
+| `GET` | `/data/crypto/sentiment` | Fear & Greed index | API Key |
+| `GET` | `/data/crypto/overview` | All-in-one summary of all crypto metrics | API Key |
+
+---
+
+## GET /data/crypto/funding-rates
+
+Returns current aggregated funding rates across exchanges for a given symbol.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `symbol` | string | Yes | Trading symbol: `BTC`, `ETH`, or `SOL` |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/crypto/funding-rates?symbol=BTC" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "symbol": "BTC",
+  "aggregated": {
+    "avg_rate": 0.0103,
+    "min_rate": 0.0051,
+    "max_rate": 0.0200,
+    "avg_annual_pct": 10.71
+  },
+  "exchanges": [
+    { "exchange": "Binance", "rate": 0.0100, "annual_pct": 10.40 },
+    { "exchange": "Bybit", "rate": 0.0120, "annual_pct": 12.48 },
+    { "exchange": "OKX", "rate": 0.0089, "annual_pct": 9.26 }
+  ],
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```
+
+---
+
+## GET /data/crypto/funding-rates/history
+
+Returns historical funding rate snapshots.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `symbol` | string | Yes | Trading symbol: `BTC`, `ETH`, or `SOL` |
+| `period` | string | No | Lookback period: `1d`, `7d`, `30d` (default `7d`) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/crypto/funding-rates/history?symbol=ETH&period=7d" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "symbol": "ETH",
+  "period": "7d",
+  "data": [
+    { "timestamp": "2026-03-24T08:00:00Z", "avg_rate": 0.0085 },
+    { "timestamp": "2026-03-24T16:00:00Z", "avg_rate": 0.0091 },
+    { "timestamp": "2026-03-25T00:00:00Z", "avg_rate": 0.0078 }
+  ]
+}
+```
+
+---
+
+## GET /data/crypto/open-interest
+
+Returns current open interest total and percentage changes across multiple timeframes.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `symbol` | string | Yes | Trading symbol: `BTC`, `ETH`, or `SOL` |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/crypto/open-interest?symbol=BTC" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "symbol": "BTC",
+  "total_oi_usd": 18450000000,
+  "changes": {
+    "5m": 0.12,
+    "15m": -0.05,
+    "1h": 0.45,
+    "4h": 1.23,
+    "24h": -2.10
+  },
+  "exchanges": [
+    { "exchange": "Binance", "oi_usd": 6200000000 },
+    { "exchange": "Bybit", "oi_usd": 3800000000 }
+  ],
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```
+
+---
+
+## GET /data/crypto/open-interest/history
+
+Returns historical open interest data.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `symbol` | string | Yes | Trading symbol: `BTC`, `ETH`, or `SOL` |
+| `period` | string | No | Lookback period: `1d`, `7d`, `30d` (default `7d`) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/crypto/open-interest/history?symbol=SOL&period=30d" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "symbol": "SOL",
+  "period": "30d",
+  "data": [
+    { "timestamp": "2026-03-01T00:00:00Z", "total_oi_usd": 2100000000 },
+    { "timestamp": "2026-03-02T00:00:00Z", "total_oi_usd": 2250000000 }
+  ]
+}
+```
+
+---
+
+## GET /data/crypto/liquidations
+
+Returns liquidation data broken down by long and short positions across configurable timeframes.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `symbol` | string | Yes | Trading symbol: `BTC`, `ETH`, or `SOL` |
+| `timeframe` | string | No | `1h`, `4h`, or `24h` (default `24h`) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/crypto/liquidations?symbol=BTC&timeframe=24h" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "symbol": "BTC",
+  "timeframe": "24h",
+  "total_usd": 142000000,
+  "long_usd": 95000000,
+  "short_usd": 47000000,
+  "long_pct": 66.9,
+  "short_pct": 33.1,
+  "exchanges": [
+    { "exchange": "Binance", "long_usd": 42000000, "short_usd": 18000000 },
+    { "exchange": "Bybit", "long_usd": 28000000, "short_usd": 15000000 }
+  ],
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```
+
+---
+
+## GET /data/crypto/taker-volume
+
+Returns buy/sell taker volume ratio and absolute volumes.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `symbol` | string | Yes | Trading symbol: `BTC`, `ETH`, or `SOL` |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/crypto/taker-volume?symbol=BTC" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "symbol": "BTC",
+  "buy_volume_usd": 3200000000,
+  "sell_volume_usd": 2900000000,
+  "buy_sell_ratio": 1.103,
+  "period": "24h",
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```
+
+---
+
+## GET /data/crypto/sentiment
+
+Returns the current Fear & Greed index value and classification.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/data/crypto/sentiment \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "value": 72,
+  "classification": "Greed",
+  "previous_close": 68,
+  "timestamp": "2026-03-31T00:00:00Z"
+}
+```
+
+---
+
+## GET /data/crypto/overview
+
+Returns an all-in-one summary combining funding rates, open interest, liquidations, taker volume, and sentiment for a symbol.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `symbol` | string | Yes | Trading symbol: `BTC`, `ETH`, or `SOL` |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/crypto/overview?symbol=BTC" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "symbol": "BTC",
+  "funding": {
+    "avg_rate": 0.0103,
+    "avg_annual_pct": 10.71
+  },
+  "open_interest": {
+    "total_usd": 18450000000,
+    "change_24h_pct": -2.10
+  },
+  "liquidations_24h": {
+    "total_usd": 142000000,
+    "long_pct": 66.9,
+    "short_pct": 33.1
+  },
+  "taker_volume": {
+    "buy_sell_ratio": 1.103
+  },
+  "sentiment": {
+    "fear_greed": 72,
+    "classification": "Greed"
+  },
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```

@@ -1,0 +1,315 @@
+---
+title: Binance Orderbook
+description: BTCUSDT spot and futures L2 orderbook data from Tencent Cloud recorder
+---
+
+# Binance Orderbook
+
+Base path: `/api/v1/data/live-orderbook/binance`
+
+Real-time and historical L2 orderbook data for BTCUSDT spot and futures markets, recorded by a Tencent Cloud collector. Includes health monitoring, full depth snapshots, historical time-range queries, and curated analytical datasets.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/live-orderbook/binance/health` | Collector health check | API Key |
+| `GET` | `/data/live-orderbook/binance/collector-health` | Per-market collector status | API Key |
+| `GET` | `/data/live-orderbook/binance/latest` | Latest summary (best bid/ask, spread, depth) | API Key |
+| `GET` | `/data/live-orderbook/binance/full-snapshot` | Full depth snapshot | API Key |
+| `GET` | `/data/live-orderbook/binance/snapshots` | Historical snapshots with time range | API Key |
+| `GET` | `/data/live-orderbook/binance/events` | Raw L2 diff events | API Key |
+| `GET` | `/data/live-orderbook/binance/curated/{dataset}` | Curated analytical datasets | API Key |
+| `GET` | `/data/live-orderbook/binance/meta/markets` | Available markets metadata | API Key |
+
+---
+
+## GET /data/live-orderbook/binance/health
+
+Returns the overall health status of the orderbook collector system.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/data/live-orderbook/binance/health \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "status": "healthy",
+  "uptime_seconds": 864000,
+  "last_event_at": "2026-03-31T12:00:01Z",
+  "markets_active": 2
+}
+```
+
+---
+
+## GET /data/live-orderbook/binance/collector-health
+
+Returns detailed health status for each individual market collector.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/data/live-orderbook/binance/collector-health \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "collectors": [
+    {
+      "market": "spot",
+      "symbol": "BTCUSDT",
+      "status": "active",
+      "events_per_second": 12.4,
+      "last_event_at": "2026-03-31T12:00:01Z",
+      "lag_ms": 45
+    },
+    {
+      "market": "futures",
+      "symbol": "BTCUSDT",
+      "status": "active",
+      "events_per_second": 18.7,
+      "last_event_at": "2026-03-31T12:00:01Z",
+      "lag_ms": 32
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/live-orderbook/binance/latest
+
+Returns the latest orderbook summary including best bid/ask, spread, and depth at configurable levels.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `market` | string | No | `spot` or `futures` (default `spot`) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/live-orderbook/binance/latest?market=spot" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "market": "spot",
+  "symbol": "BTCUSDT",
+  "best_bid": 84250.10,
+  "best_ask": 84250.50,
+  "spread": 0.40,
+  "spread_bps": 0.47,
+  "bid_depth_usd": 2450000,
+  "ask_depth_usd": 2180000,
+  "timestamp": "2026-03-31T12:00:01Z"
+}
+```
+
+---
+
+## GET /data/live-orderbook/binance/full-snapshot
+
+Returns a full depth snapshot of the orderbook.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `market` | string | No | `spot` or `futures` (default `spot`) |
+| `depth` | integer | No | Number of price levels per side (default 50, max 1000) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/live-orderbook/binance/full-snapshot?market=futures&depth=20" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "market": "futures",
+  "symbol": "BTCUSDT",
+  "sequence": 1928374650,
+  "bids": [
+    [84250.10, 2.150],
+    [84250.00, 5.320]
+  ],
+  "asks": [
+    [84250.50, 1.870],
+    [84250.60, 3.410]
+  ],
+  "timestamp": "2026-03-31T12:00:01Z"
+}
+```
+
+---
+
+## GET /data/live-orderbook/binance/snapshots
+
+Returns historical orderbook snapshots within a time range.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `market` | string | No | `spot` or `futures` (default `spot`) |
+| `start` | string | Yes | Start time in ISO 8601 format |
+| `end` | string | Yes | End time in ISO 8601 format |
+| `interval` | string | No | Snapshot interval: `1s`, `5s`, `1m`, `5m` (default `1m`) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/live-orderbook/binance/snapshots?market=spot&start=2026-03-31T11:00:00Z&end=2026-03-31T12:00:00Z&interval=5m" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "market": "spot",
+  "snapshots": [
+    {
+      "timestamp": "2026-03-31T11:00:00Z",
+      "best_bid": 84100.20,
+      "best_ask": 84100.80,
+      "spread_bps": 0.71,
+      "bid_depth_usd": 2300000,
+      "ask_depth_usd": 2050000
+    }
+  ],
+  "count": 12
+}
+```
+
+---
+
+## GET /data/live-orderbook/binance/events
+
+Returns raw L2 diff events (incremental orderbook updates) within a time range.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `market` | string | No | `spot` or `futures` (default `spot`) |
+| `start` | string | Yes | Start time in ISO 8601 format |
+| `end` | string | Yes | End time in ISO 8601 format |
+| `limit` | integer | No | Max events to return (default 100, max 1000) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/live-orderbook/binance/events?market=futures&start=2026-03-31T11:59:00Z&end=2026-03-31T12:00:00Z&limit=50" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "market": "futures",
+  "events": [
+    {
+      "sequence": 1928374640,
+      "timestamp": "2026-03-31T11:59:00.123Z",
+      "bids": [[84249.50, 0.000], [84248.90, 3.200]],
+      "asks": [[84251.10, 1.500]]
+    }
+  ],
+  "count": 50
+}
+```
+
+---
+
+## GET /data/live-orderbook/binance/curated/\{dataset\}
+
+Returns pre-computed curated analytical datasets derived from orderbook data.
+
+**Path parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `dataset` | string | Dataset name (e.g. `spread-history`, `depth-imbalance`, `liquidity-heatmap`) |
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `market` | string | No | `spot` or `futures` (default `spot`) |
+| `period` | string | No | Lookback period: `1h`, `4h`, `24h` (default `24h`) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/live-orderbook/binance/curated/spread-history?market=spot&period=4h" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "dataset": "spread-history",
+  "market": "spot",
+  "period": "4h",
+  "data": [
+    { "timestamp": "2026-03-31T08:00:00Z", "avg_spread_bps": 0.52, "min_spread_bps": 0.12, "max_spread_bps": 1.85 },
+    { "timestamp": "2026-03-31T09:00:00Z", "avg_spread_bps": 0.48, "min_spread_bps": 0.10, "max_spread_bps": 1.42 }
+  ]
+}
+```
+
+---
+
+## GET /data/live-orderbook/binance/meta/markets
+
+Returns metadata about available markets being recorded.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/data/live-orderbook/binance/meta/markets \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "markets": [
+    {
+      "market": "spot",
+      "symbol": "BTCUSDT",
+      "recording_since": "2025-12-01T00:00:00Z",
+      "snapshot_interval_ms": 100,
+      "status": "active"
+    },
+    {
+      "market": "futures",
+      "symbol": "BTCUSDT",
+      "recording_since": "2025-12-01T00:00:00Z",
+      "snapshot_interval_ms": 100,
+      "status": "active"
+    }
+  ]
+}
+```

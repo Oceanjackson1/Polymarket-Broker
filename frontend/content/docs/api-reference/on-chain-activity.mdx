@@ -1,0 +1,74 @@
+---
+title: On-Chain Activity
+description: Track on-chain merges, splits, and redeems for Polymarket conditional tokens.
+---
+
+# On-Chain Activity
+
+Base path: `/api/v1/data/dome`
+
+Query on-chain activity for Polymarket conditional tokens, including merge, split, and redeem operations.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/dome/activity` | On-chain activity: merges, splits, redeems | API Key |
+
+---
+
+## GET /data/dome/activity
+
+Returns on-chain activity records including token merges, splits, and redeems. Use the query parameters to filter by user, market, condition, or time range.
+
+**Query parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `user` | string | No | Filter by user wallet address |
+| `market_slug` | string | No | Filter by market slug |
+| `condition_id` | string | No | Filter by condition ID |
+| `start_time` | string | No | Start of time range (ISO 8601) |
+| `end_time` | string | No | End of time range (ISO 8601) |
+| `limit` | integer | No | Maximum number of results to return |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/activity?market_slug=will-btc-hit-100k-2026&limit=50" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "activity": [
+    {
+      "type": "split",
+      "user": "0xabc123...",
+      "condition_id": "0xdef456...",
+      "market_slug": "will-btc-hit-100k-2026",
+      "amount": 5000.0,
+      "tx_hash": "0x789...",
+      "timestamp": "2026-03-31T10:30:00Z"
+    },
+    {
+      "type": "merge",
+      "user": "0xabc123...",
+      "condition_id": "0xdef456...",
+      "market_slug": "will-btc-hit-100k-2026",
+      "amount": 2000.0,
+      "tx_hash": "0x012...",
+      "timestamp": "2026-03-31T09:15:00Z"
+    },
+    {
+      "type": "redeem",
+      "user": "0x999aaa...",
+      "condition_id": "0xdef456...",
+      "market_slug": "will-btc-hit-100k-2026",
+      "amount": 1000.0,
+      "tx_hash": "0x345...",
+      "timestamp": "2026-03-30T22:00:00Z"
+    }
+  ],
+  "count": 3
+}
+```

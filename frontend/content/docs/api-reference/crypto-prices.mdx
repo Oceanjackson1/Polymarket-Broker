@@ -1,0 +1,65 @@
+---
+title: Crypto Prices
+description: Real-time crypto prices from Binance or Chainlink for BTC, ETH, SOL, and MATIC.
+---
+
+# Crypto Prices
+
+Base path: `/api/v1/data/dome/crypto`
+
+Fetch real-time cryptocurrency prices from Binance or Chainlink oracles. Supported symbols: BTC, ETH, SOL, MATIC.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/dome/crypto/\{symbol\}/price` | Real-time crypto price | API Key |
+
+---
+
+## GET /data/dome/crypto/\{symbol\}/price
+
+Returns the current price for a cryptocurrency. Choose between Binance (centralized exchange) or Chainlink (on-chain oracle) as the data source.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `symbol` | string | Yes | Cryptocurrency symbol: `BTC`, `ETH`, `SOL`, or `MATIC` |
+
+**Query parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `source` | string | No | Price source: `binance` or `chainlink` (defaults to `binance`) |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/crypto/BTC/price?source=binance" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "symbol": "BTC",
+  "price": 87432.50,
+  "source": "binance",
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```
+
+**Example request (Chainlink):**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/crypto/ETH/price?source=chainlink" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "symbol": "ETH",
+  "price": 3215.80,
+  "source": "chainlink",
+  "round_id": 110680464442257320364,
+  "timestamp": "2026-03-31T11:59:45Z"
+}
+```

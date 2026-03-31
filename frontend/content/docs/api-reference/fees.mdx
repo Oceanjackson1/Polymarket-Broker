@@ -1,0 +1,158 @@
+---
+title: Fees
+description: Polymarket fee calculation, schedule lookup, and real-time estimation
+---
+
+# Fees
+
+Base path: `/api/v1/fees`
+
+Calculate and estimate Polymarket trading fees. The fee schedule varies by market category, price level, trade volume, and your account tier. Use these endpoints to look up fee parameters, estimate costs before placing an order, or auto-detect the fee for a specific market.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/fees/schedule` | All category fee parameters with sample rates | API Key |
+| `GET` | `/fees/estimate` | Real-time fee estimate for a hypothetical trade | API Key |
+| `GET` | `/fees/market/{token_id}` | Auto-detect category + fetch midpoint + calculate fee | API Key |
+
+---
+
+## GET /fees/schedule
+
+Returns the full fee schedule across all market categories, including the fee formula parameters and sample rates at common price points.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/fees/schedule \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "categories": [
+    {
+      "category": "sports",
+      "base_fee_bps": 200,
+      "maker_rebate_bps": 50,
+      "taker_fee_bps": 200,
+      "volume_discounts": [
+        { "min_volume_usd": 100000, "discount_bps": 25 },
+        { "min_volume_usd": 1000000, "discount_bps": 75 }
+      ],
+      "sample_rates": {
+        "at_0.10": { "fee_pct": 1.80 },
+        "at_0.50": { "fee_pct": 2.00 },
+        "at_0.90": { "fee_pct": 1.80 }
+      }
+    },
+    {
+      "category": "crypto",
+      "base_fee_bps": 150,
+      "maker_rebate_bps": 40,
+      "taker_fee_bps": 150,
+      "volume_discounts": [
+        { "min_volume_usd": 100000, "discount_bps": 20 },
+        { "min_volume_usd": 1000000, "discount_bps": 60 }
+      ],
+      "sample_rates": {
+        "at_0.10": { "fee_pct": 1.35 },
+        "at_0.50": { "fee_pct": 1.50 },
+        "at_0.90": { "fee_pct": 1.35 }
+      }
+    }
+  ]
+}
+```
+
+---
+
+## GET /fees/estimate
+
+Returns a real-time fee estimate for a hypothetical trade based on category, price, volume, and tier.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `category` | string | Yes | Market category: `sports`, `crypto`, `politics`, `weather`, `other` |
+| `price` | number | Yes | Trade price (0.01 to 0.99) |
+| `volume` | number | Yes | Trade size in USD |
+| `tier` | string | No | Account tier: `free`, `starter`, `pro` (default `free`) |
+| `side` | string | No | `maker` or `taker` (default `taker`) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/fees/estimate?category=sports&price=0.55&volume=1000&tier=pro&side=taker" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "category": "sports",
+  "price": 0.55,
+  "volume_usd": 1000.00,
+  "tier": "pro",
+  "side": "taker",
+  "fee_bps": 125,
+  "fee_pct": 1.25,
+  "fee_usd": 12.50,
+  "net_cost_usd": 1012.50
+}
+```
+
+---
+
+## GET /fees/market/\{token_id\}
+
+Auto-detects the market category, fetches the current midpoint price, and calculates the fee for a given token. Useful for getting a one-call fee estimate when you already know the token ID.
+
+**Path parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `token_id` | string | Polymarket token ID |
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `volume` | number | No | Hypothetical trade size in USD (default 100) |
+| `tier` | string | No | Account tier: `free`, `starter`, `pro` (default inferred from API key) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/fees/market/0x1234abcd?volume=5000" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "token_id": "0x1234abcd",
+  "market_title": "Will the Lakers win the 2026 NBA Finals?",
+  "category": "sports",
+  "midpoint": 0.38,
+  "volume_usd": 5000.00,
+  "tier": "pro",
+  "taker_fee": {
+    "fee_bps": 125,
+    "fee_pct": 1.25,
+    "fee_usd": 62.50
+  },
+  "maker_fee": {
+    "fee_bps": -50,
+    "fee_pct": -0.50,
+    "rebate_usd": 25.00
+  }
+}
+```

@@ -1,0 +1,174 @@
+---
+title: Kalshi Markets & Data
+description: Browse Kalshi markets, prices, trades, and order book snapshots.
+---
+
+# Kalshi Markets & Data
+
+Base path: `/api/v1/data/dome/kalshi`
+
+Browse Kalshi prediction markets, query current prices, retrieve historical trades, and access order book snapshots.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/dome/kalshi/markets` | List Kalshi markets | API Key |
+| `GET` | `/data/dome/kalshi/price/{market_ticker}` | Current price for a market | API Key |
+| `GET` | `/data/dome/kalshi/trades` | Historical trades | API Key |
+| `GET` | `/data/dome/kalshi/orderbook/{ticker}` | Order book snapshots | API Key |
+
+---
+
+## GET /data/dome/kalshi/markets
+
+Lists Kalshi markets with optional filtering by search term, status, and minimum volume.
+
+**Query parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `search` | string | No | Search term to filter markets by title |
+| `status` | string | No | Market status filter (e.g., `open`, `closed`) |
+| `min_volume` | number | No | Minimum volume threshold |
+| `limit` | integer | No | Maximum number of results to return |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/kalshi/markets?search=bitcoin&status=open&limit=10" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "markets": [
+    {
+      "ticker": "BTC-100K-2026",
+      "title": "Will Bitcoin exceed $100,000 in 2026?",
+      "status": "open",
+      "yes_price": 0.68,
+      "no_price": 0.32,
+      "volume": 450000,
+      "close_time": "2026-12-31T23:59:59Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/dome/kalshi/price/\{market_ticker\}
+
+Returns the current price for a specific Kalshi market. Optionally query the price at a specific historical time.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `market_ticker` | string | Yes | The Kalshi market ticker |
+
+**Query parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `at_time` | string | No | ISO 8601 timestamp to retrieve the price at a specific point in time |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/kalshi/price/BTC-100K-2026" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "ticker": "BTC-100K-2026",
+  "yes_price": 0.68,
+  "no_price": 0.32,
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```
+
+---
+
+## GET /data/dome/kalshi/trades
+
+Returns historical trades for Kalshi markets. Filter by ticker and time range.
+
+**Query parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `ticker` | string | No | Filter by market ticker |
+| `start_time` | string | No | Start of time range (ISO 8601) |
+| `end_time` | string | No | End of time range (ISO 8601) |
+| `limit` | integer | No | Maximum number of results to return |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/kalshi/trades?ticker=BTC-100K-2026&limit=20" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "trades": [
+    {
+      "ticker": "BTC-100K-2026",
+      "price": 0.68,
+      "count": 5,
+      "side": "yes",
+      "timestamp": "2026-03-31T11:58:00Z"
+    },
+    {
+      "ticker": "BTC-100K-2026",
+      "price": 0.67,
+      "count": 3,
+      "side": "no",
+      "timestamp": "2026-03-31T11:55:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/dome/kalshi/orderbook/\{ticker\}
+
+Returns order book snapshots for a Kalshi market. Filter by time range.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `ticker` | string | Yes | The Kalshi market ticker |
+
+**Query parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `start_time` | string | No | Start of time range (ISO 8601) |
+| `end_time` | string | No | End of time range (ISO 8601) |
+| `limit` | integer | No | Maximum number of snapshots to return |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/kalshi/orderbook/BTC-100K-2026?limit=5" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "ticker": "BTC-100K-2026",
+  "snapshots": [
+    {
+      "timestamp": "2026-03-31T12:00:00Z",
+      "yes_bids": [
+        { "price": 0.67, "quantity": 200 },
+        { "price": 0.66, "quantity": 500 }
+      ],
+      "yes_asks": [
+        { "price": 0.69, "quantity": 150 },
+        { "price": 0.70, "quantity": 400 }
+      ]
+    }
+  ]
+}
+```

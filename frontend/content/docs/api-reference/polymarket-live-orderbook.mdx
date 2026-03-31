@@ -1,0 +1,164 @@
+---
+title: Polymarket Live Orderbook
+description: L2 depth data for Polymarket BTC Up/Down markets recorded from the server.
+---
+
+# Polymarket Live Orderbook
+
+Base path: `/api/v1/data/live-orderbook/polymarket`
+
+L2 depth data for Polymarket BTC Up/Down markets recorded from the server. Browse recording time windows, retrieve depth snapshots, best bid/ask price changes, and executed trades within each window.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/live-orderbook/polymarket/windows` | List recording time windows | API Key |
+| `GET` | `/data/live-orderbook/polymarket/\{window\}/book-snapshots` | Depth snapshots for a window | API Key |
+| `GET` | `/data/live-orderbook/polymarket/\{window\}/price-changes` | Best bid/ask price changes | API Key |
+| `GET` | `/data/live-orderbook/polymarket/\{window\}/trades` | Executed trades in a window | API Key |
+
+---
+
+## GET /data/live-orderbook/polymarket/windows
+
+Lists all available recording time windows. Each window represents a continuous period during which order book data was captured.
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/live-orderbook/polymarket/windows" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "windows": [
+    {
+      "id": "2026-03-31T08-12",
+      "start_time": "2026-03-31T08:00:00Z",
+      "end_time": "2026-03-31T12:00:00Z",
+      "snapshot_count": 4800
+    },
+    {
+      "id": "2026-03-30T14-18",
+      "start_time": "2026-03-30T14:00:00Z",
+      "end_time": "2026-03-30T18:00:00Z",
+      "snapshot_count": 4800
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/live-orderbook/polymarket/\{window\}/book-snapshots
+
+Returns L2 depth snapshots captured during the specified recording window. Each snapshot contains the full bid/ask ladder at that point in time.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `window` | string | Yes | The recording window ID |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/live-orderbook/polymarket/2026-03-31T08-12/book-snapshots" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "window": "2026-03-31T08-12",
+  "snapshots": [
+    {
+      "timestamp": "2026-03-31T08:00:03Z",
+      "bids": [
+        { "price": 0.52, "size": 1500.0 },
+        { "price": 0.51, "size": 3200.0 }
+      ],
+      "asks": [
+        { "price": 0.53, "size": 1200.0 },
+        { "price": 0.54, "size": 2800.0 }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/live-orderbook/polymarket/\{window\}/price-changes
+
+Returns best bid and best ask price changes recorded during the specified window. Useful for tracking top-of-book movement over time.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `window` | string | Yes | The recording window ID |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/live-orderbook/polymarket/2026-03-31T08-12/price-changes" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "window": "2026-03-31T08-12",
+  "price_changes": [
+    {
+      "timestamp": "2026-03-31T08:01:15Z",
+      "best_bid": 0.52,
+      "best_ask": 0.53,
+      "spread": 0.01
+    },
+    {
+      "timestamp": "2026-03-31T08:02:30Z",
+      "best_bid": 0.525,
+      "best_ask": 0.535,
+      "spread": 0.01
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/live-orderbook/polymarket/\{window\}/trades
+
+Returns all executed trades recorded during the specified window.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `window` | string | Yes | The recording window ID |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/live-orderbook/polymarket/2026-03-31T08-12/trades" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "window": "2026-03-31T08-12",
+  "trades": [
+    {
+      "timestamp": "2026-03-31T08:05:22Z",
+      "price": 0.525,
+      "size": 300.0,
+      "side": "buy"
+    },
+    {
+      "timestamp": "2026-03-31T08:07:45Z",
+      "price": 0.52,
+      "size": 150.0,
+      "side": "sell"
+    }
+  ]
+}
+```

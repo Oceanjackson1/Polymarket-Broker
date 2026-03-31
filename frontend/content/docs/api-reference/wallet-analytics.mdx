@@ -1,0 +1,151 @@
+---
+title: Wallet Analytics
+description: Look up any Polymarket wallet by address or handle, view positions and PnL history
+---
+
+# Wallet Analytics
+
+Base path: `/api/v1/data/dome/wallets`
+
+Look up any Polymarket wallet by EOA address, proxy address, or username handle. Retrieve all open and closed positions, and view realized PnL history over time.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/dome/wallets/lookup` | Find a wallet by EOA, proxy, or handle | API Key |
+| `GET` | `/data/dome/wallets/\{address\}/positions` | All positions for a wallet | API Key |
+| `GET` | `/data/dome/wallets/\{address\}/pnl` | Realized PnL history | API Key |
+
+---
+
+## GET /data/dome/wallets/lookup
+
+Find a Polymarket wallet by EOA address, proxy address, or username handle. Optionally include aggregate trading metrics.
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | Yes | Search query: an EOA address (`0x...`), proxy address, or Polymarket handle |
+| `with_metrics` | boolean | No | If `true`, include aggregate trading metrics (volume, win rate, etc.). Default `false`. |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/dome/wallets/lookup?q=SharkyBets&with_metrics=true" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "wallet": {
+    "eoa": "0x1234567890abcdef1234567890abcdef12345678",
+    "proxy": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    "handle": "SharkyBets",
+    "avatar_url": "https://polymarket.com/avatars/sharkybets.png",
+    "created_at": "2025-06-15T10:00:00Z"
+  },
+  "metrics": {
+    "total_volume_usd": 1245000.00,
+    "total_trades": 842,
+    "win_rate": 0.584,
+    "realized_pnl_usd": 38200.00,
+    "open_positions": 12,
+    "markets_traded": 156
+  }
+}
+```
+
+---
+
+## GET /data/dome/wallets/\{address\}/positions
+
+Returns all open and closed positions for a wallet.
+
+**Path parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `address` | string | Wallet proxy address or EOA |
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `status` | string | No | Filter by `open`, `closed`, or `all` (default `all`) |
+| `limit` | integer | No | Max results (default 50, max 200) |
+| `cursor` | string | No | Pagination cursor |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/dome/wallets/0xabcdef.../positions?status=open&limit=10" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "address": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+  "positions": [
+    {
+      "market_id": "0x1234abcd",
+      "title": "Will BTC exceed $100k by June 2026?",
+      "side": "YES",
+      "size": 5000.00,
+      "avg_entry_price": 0.42,
+      "current_price": 0.58,
+      "unrealized_pnl_usd": 800.00,
+      "status": "open",
+      "opened_at": "2026-02-10T14:30:00Z"
+    }
+  ],
+  "next_cursor": "eyJpZCI6NTB9"
+}
+```
+
+---
+
+## GET /data/dome/wallets/\{address\}/pnl
+
+Returns the daily realized PnL history for a wallet.
+
+**Path parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `address` | string | Wallet proxy address or EOA |
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `granularity` | string | No | Time granularity: `day` (default), `week`, `month` |
+| `period` | string | No | Lookback period: `7d`, `30d`, `90d`, `all` (default `30d`) |
+
+**Example request:**
+
+```bash
+curl "https://api.polydesk.io/api/v1/data/dome/wallets/0xabcdef.../pnl?granularity=day&period=30d" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "address": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+  "granularity": "day",
+  "period": "30d",
+  "cumulative_pnl_usd": 38200.00,
+  "data": [
+    { "date": "2026-03-01", "realized_pnl_usd": 420.00, "cumulative_usd": 35600.00 },
+    { "date": "2026-03-02", "realized_pnl_usd": -180.00, "cumulative_usd": 35420.00 },
+    { "date": "2026-03-03", "realized_pnl_usd": 1200.00, "cumulative_usd": 36620.00 }
+  ]
+}
+```

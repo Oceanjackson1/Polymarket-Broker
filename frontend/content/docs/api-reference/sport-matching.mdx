@@ -1,0 +1,63 @@
+---
+title: Sport Matching
+description: Find equivalent prediction markets across Polymarket and Kalshi for a given sport and date.
+---
+
+# Sport Matching
+
+Base path: `/api/v1/data/dome/matching`
+
+Find equivalent markets across Polymarket and Kalshi for a specific sport on a given date. This enables cross-platform comparison and arbitrage analysis.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/dome/matching/{sport}` | Find equivalent markets across platforms for a sport on a date | API Key |
+
+---
+
+## GET /data/dome/matching/\{sport\}
+
+Matches equivalent markets between Polymarket and Kalshi for the specified sport on a given date. Returns pairs of markets that refer to the same underlying event.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `sport` | string | Yes | Sport category (e.g., `nba`, `nfl`, `mlb`, `nhl`, `soccer`) |
+
+**Query parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `date` | string | Yes | Date in `YYYY-MM-DD` format |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/matching/nba?date=2026-03-31" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "sport": "nba",
+  "date": "2026-03-31",
+  "matches": [
+    {
+      "event": "Lakers vs Celtics",
+      "polymarket": {
+        "slug": "nba-lakers-celtics-2026-03-31",
+        "question": "Will the Lakers beat the Celtics on March 31?",
+        "yes_price": 0.55
+      },
+      "kalshi": {
+        "ticker": "NBA-LAL-BOS-20260331",
+        "title": "Lakers to beat Celtics (Mar 31)",
+        "yes_price": 0.57
+      },
+      "spread_bps": 200
+    }
+  ],
+  "count": 1
+}
+```

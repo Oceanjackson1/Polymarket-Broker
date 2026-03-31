@@ -1,0 +1,117 @@
+---
+title: Market Snapshots & Candlesticks
+description: Historical market snapshots, OHLC candlestick data, and Polymarket event listings.
+---
+
+# Market Snapshots & Candlesticks
+
+Base path: `/api/v1/data/dome`
+
+Access stored market snapshots collected over time, historical OHLC candlestick data, and browse Polymarket events (groups of related markets).
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/dome/markets` | Latest snapshot per market | API Key |
+| `GET` | `/data/dome/markets/\{slug\}/candlesticks` | Historical OHLC candlestick data | API Key |
+| `GET` | `/data/dome/events` | List Polymarket events | API Key |
+
+---
+
+## GET /data/dome/markets
+
+Returns the latest collected snapshot for each market. These snapshots are stored by the Dome data collector and include price, volume, and liquidity information.
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/markets" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "markets": [
+    {
+      "slug": "will-btc-hit-100k-2026",
+      "question": "Will BTC hit $100k in 2026?",
+      "yes_price": 0.72,
+      "no_price": 0.28,
+      "volume_24h": 125000.0,
+      "liquidity": 340000.0,
+      "updated_at": "2026-03-31T11:55:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/dome/markets/\{slug\}/candlesticks
+
+Returns historical OHLC (Open, High, Low, Close) candlestick data for a specific market, identified by its slug.
+
+**Path parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `slug` | string | Yes | The market slug identifier |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/markets/will-btc-hit-100k-2026/candlesticks" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "slug": "will-btc-hit-100k-2026",
+  "candlesticks": [
+    {
+      "timestamp": "2026-03-31T00:00:00Z",
+      "open": 0.70,
+      "high": 0.74,
+      "low": 0.69,
+      "close": 0.72,
+      "volume": 18500.0
+    },
+    {
+      "timestamp": "2026-03-30T00:00:00Z",
+      "open": 0.68,
+      "high": 0.71,
+      "low": 0.67,
+      "close": 0.70,
+      "volume": 22000.0
+    }
+  ]
+}
+```
+
+---
+
+## GET /data/dome/events
+
+Lists Polymarket events. Each event is a group of related markets (e.g., "2026 US Election" may contain multiple question markets).
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/events" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "events": [
+    {
+      "id": "evt_001",
+      "title": "2026 US Midterm Elections",
+      "slug": "2026-us-midterm-elections",
+      "markets_count": 12,
+      "total_volume": 2500000.0,
+      "created_at": "2026-01-15T00:00:00Z"
+    }
+  ]
+}
+```

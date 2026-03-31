@@ -1,0 +1,208 @@
+---
+title: WebSocket Streams
+description: Real-time orderbook, sports, crypto, and portfolio data via WebSocket
+---
+
+# WebSocket Streams
+
+Base path: `wss://api.polydesk.io/api/v1/ws`
+
+Subscribe to real-time data streams over WebSocket. Authenticate by passing your API key as a query parameter (`?api_key=YOUR_KEY`) or in the `X-API-Key` header during the WebSocket handshake.
+
+## Streams
+
+| Protocol | Path | Description | Interval | Auth |
+|---|---|---|---|---|
+| `ws` | `/ws/markets/{token_id}` | Orderbook updates for any market | 3s | API Key |
+| `ws` | `/ws/nba/\{game_id\}/live` | NBA live game data | 5s | API Key |
+| `ws` | `/ws/btc/live` | BTC prediction markets across all timeframes | 5s | API Key |
+| `ws` | `/ws/portfolio/live` | Portfolio heartbeat with position summaries | 10s | API Key |
+
+---
+
+## Connection
+
+Connect using any WebSocket client. Pass your API key as a query parameter:
+
+```bash
+wscat -c "wss://api.polydesk.io/api/v1/ws/markets/0x1234abcd?api_key=YOUR_KEY"
+```
+
+Or using JavaScript:
+
+```javascript
+const ws = new WebSocket(
+  "wss://api.polydesk.io/api/v1/ws/markets/0x1234abcd?api_key=YOUR_KEY"
+);
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log(data);
+};
+```
+
+The server sends a `ping` frame every 30 seconds. If no `pong` is received within 10 seconds, the connection is closed.
+
+---
+
+## ws /ws/markets/\{token_id\}
+
+Streams orderbook updates for a specific market token every 3 seconds.
+
+**Path parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `token_id` | string | Polymarket token ID |
+
+**Example message:**
+
+```json
+{
+  "type": "orderbook",
+  "token_id": "0x1234abcd",
+  "midpoint": 0.62,
+  "spread": 0.02,
+  "best_bid": 0.61,
+  "best_ask": 0.63,
+  "bids": [
+    [0.61, 5200.00],
+    [0.60, 12400.00],
+    [0.59, 8100.00]
+  ],
+  "asks": [
+    [0.63, 3100.00],
+    [0.64, 8700.00],
+    [0.65, 4500.00]
+  ],
+  "timestamp": "2026-03-31T12:00:03Z"
+}
+```
+
+---
+
+## ws /ws/nba/\{game_id\}/live
+
+Streams live NBA game data every 5 seconds, including current score, game clock, live odds, and bias versus Polymarket pricing.
+
+**Path parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `game_id` | string | NBA game identifier |
+
+**Example message:**
+
+```json
+{
+  "type": "nba_live",
+  "game_id": "nba_20260401_lal_bos",
+  "home_team": "Los Angeles Lakers",
+  "away_team": "Boston Celtics",
+  "home_score": 88,
+  "away_score": 82,
+  "quarter": "Q4",
+  "clock": "3:42",
+  "home_win_odds": 0.72,
+  "polymarket_price": 0.68,
+  "bias_bps": 400,
+  "timestamp": "2026-04-01T01:45:05Z"
+}
+```
+
+---
+
+## ws /ws/btc/live
+
+Streams BTC prediction market data across all active timeframes every 5 seconds.
+
+**Example message:**
+
+```json
+{
+  "type": "btc_live",
+  "markets": [
+    {
+      "title": "BTC above $85k on April 1?",
+      "token_id": "0xbtc001",
+      "timeframe": "daily",
+      "midpoint": 0.71,
+      "change_1h": 0.03,
+      "volume_24h": 425000.00
+    },
+    {
+      "title": "BTC above $90k by April 7?",
+      "token_id": "0xbtc002",
+      "timeframe": "weekly",
+      "midpoint": 0.35,
+      "change_1h": -0.01,
+      "volume_24h": 180000.00
+    }
+  ],
+  "btc_spot_price": 84250.50,
+  "timestamp": "2026-03-31T12:00:05Z"
+}
+```
+
+---
+
+## ws /ws/portfolio/live
+
+Streams a portfolio heartbeat every 10 seconds with a summary of your open positions, total value, and unrealized PnL.
+
+**Example message:**
+
+```json
+{
+  "type": "portfolio",
+  "total_value_usd": 24500.00,
+  "unrealized_pnl_usd": 1250.00,
+  "unrealized_pnl_pct": 5.38,
+  "open_positions": 8,
+  "positions": [
+    {
+      "market_id": "0x1234abcd",
+      "title": "Lakers win Game 5?",
+      "side": "YES",
+      "size": 2000.00,
+      "entry_price": 0.42,
+      "current_price": 0.58,
+      "unrealized_pnl_usd": 320.00
+    },
+    {
+      "market_id": "0xbtc001",
+      "title": "BTC above $85k on April 1?",
+      "side": "YES",
+      "size": 5000.00,
+      "entry_price": 0.65,
+      "current_price": 0.71,
+      "unrealized_pnl_usd": 300.00
+    }
+  ],
+  "timestamp": "2026-03-31T12:00:10Z"
+}
+```
+
+---
+
+## Error Messages
+
+If an error occurs, the server sends an error frame before closing the connection:
+
+```json
+{
+  "type": "error",
+  "code": "INVALID_TOKEN",
+  "message": "Token ID 0xinvalid not found",
+  "timestamp": "2026-03-31T12:00:00Z"
+}
+```
+
+Common error codes:
+
+| Code | Description |
+|---|---|
+| `AUTH_FAILED` | Invalid or missing API key |
+| `INVALID_TOKEN` | Token ID does not exist |
+| `RATE_LIMITED` | Too many concurrent WebSocket connections |
+| `SUBSCRIPTION_REQUIRED` | Stream requires a Pro tier subscription |

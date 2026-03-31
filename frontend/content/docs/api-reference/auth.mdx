@@ -1,84 +1,68 @@
 ---
-title: Auth API
-description: User registration, login, API key management, and wallet authentication endpoints
+title: Authentication
+description: Google OAuth, wallet-based login, user profile, and API key management
 ---
 
-# Auth API
+# Authentication
 
 Base path: `/api/v1/auth`
 
-The Auth API handles user registration, session management, API key lifecycle, and wallet-based non-custodial authentication.
+Authenticate via Google OAuth or wallet signature (EIP-4361). Once authenticated, manage your user profile and create scoped API keys for programmatic access.
 
 ## Endpoints
 
-| Method | Path | Description | Scope Required |
+| Method | Path | Description | Auth |
 |---|---|---|---|
-| `POST` | `/auth/register` | Register with email + password | — |
-| `POST` | `/auth/login` | Email + password → JWT | — |
-| `POST` | `/auth/wallet/challenge` | Get nonce for wallet signing | — |
-| `POST` | `/auth/wallet/verify` | Verify wallet signature → JWT | — |
-| `POST` | `/auth/wallet/refresh` | Refresh access token | — |
-| `GET` | `/auth/keys` | List all API keys | JWT required |
-| `POST` | `/auth/keys` | Create new API key | JWT required |
-| `DELETE` | `/auth/keys/\{key_id\}` | Revoke API key | JWT required |
+| `POST` | `/auth/google` | Google OAuth login | -- |
+| `POST` | `/auth/wallet/challenge` | Get nonce for wallet signing | -- |
+| `POST` | `/auth/wallet/verify` | Verify wallet signature, receive JWT | -- |
+| `GET` | `/auth/me` | Get current user profile | JWT |
+| `PATCH` | `/auth/me` | Update display name | JWT |
+| `GET` | `/auth/keys` | List all API keys | JWT |
+| `POST` | `/auth/keys` | Create a new API key | JWT |
+| `DELETE` | `/auth/keys/{key_id}` | Delete an API key | JWT |
 
 ---
 
-## POST /auth/register
+## POST /auth/google
 
-Register a new account.
+Authenticate using a Google OAuth credential token (from Google Sign-In). Returns a JWT access token and refresh token.
 
 **Request body:**
 
 ```json
 {
-  "email": "you@example.com",
-  "password": "min-8-chars-password"
+  "credential": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
 }
 ```
 
-**Response `201`:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `credential` | string | Yes | Google OAuth ID token from client-side sign-in |
 
-```json
-{
-  "user_id": "usr_abc123",
-  "email": "you@example.com",
-  "tier": "free",
-  "created_at": "2026-03-19T10:00:00Z"
-}
+**Example request:**
+
+```bash
+curl -X POST https://api.polydesk.io/api/v1/auth/google \
+  -H "Content-Type: application/json" \
+  -d '{"credential": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."}'
 ```
 
-**Error codes:**
-
-| Code | Status | Description |
-|---|---|---|
-| `EMAIL_ALREADY_EXISTS` | 409 | Email is already registered |
-| `INVALID_PASSWORD` | 400 | Password does not meet requirements |
-
----
-
-## POST /auth/login
-
-Authenticate with email and password.
-
-**Request body:**
+**Example response:**
 
 ```json
 {
-  "email": "you@example.com",
-  "password": "your-password"
-}
-```
-
-**Response `200`:**
-
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "rt_opaque_30day_token",
-  "expires_in": 900,
-  "user_id": "usr_abc123",
-  "tier": "free"
+  "access_token": "eyJhbGciOiJIUzI1NiJ9...",
+  "refresh_token": "rt_abc123...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": "usr_abc123",
+    "email": "user@example.com",
+    "display_name": "Trader One",
+    "avatar_url": "https://lh3.googleusercontent.com/a/...",
+    "created_at": "2026-01-15T10:00:00Z"
+  }
 }
 ```
 
@@ -86,68 +70,147 @@ Authenticate with email and password.
 
 ## POST /auth/wallet/challenge
 
-Get a one-time nonce to sign with your Ethereum wallet.
+Request a nonce for wallet-based authentication (EIP-4361 Sign-In with Ethereum). The client signs this nonce with their wallet and submits it to `/auth/wallet/verify`.
 
-**Request body:** `{}` (empty)
-
-**Response `200`:**
+**Request body:**
 
 ```json
 {
-  "nonce": "0x7f3a4e2d...",
-  "expires_at": "2026-03-19T10:15:00Z"
+  "wallet_address": "0x1234567890abcdef1234567890abcdef12345678"
 }
 ```
 
-The nonce expires after 15 minutes.
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `wallet_address` | string | Yes | Ethereum wallet address |
+
+**Example request:**
+
+```bash
+curl -X POST https://api.polydesk.io/api/v1/auth/wallet/challenge \
+  -H "Content-Type: application/json" \
+  -d '{"wallet_address": "0x1234567890abcdef1234567890abcdef12345678"}'
+```
+
+**Example response:**
+
+```json
+{
+  "nonce": "a1b2c3d4e5f6...",
+  "message": "Sign this message to authenticate with Polydesk.\n\nNonce: a1b2c3d4e5f6...\nIssued At: 2026-03-31T12:00:00Z\nExpires: 2026-03-31T12:05:00Z",
+  "expires_at": "2026-03-31T12:05:00Z"
+}
+```
 
 ---
 
 ## POST /auth/wallet/verify
 
-Submit a signed nonce to receive JWT tokens.
+Submit the signed nonce to complete wallet authentication and receive a JWT.
 
 **Request body:**
 
 ```json
 {
-  "address": "0xYourEthereumAddress",
-  "signature": "0xSignedNonce..."
+  "wallet_address": "0x1234567890abcdef1234567890abcdef12345678",
+  "signature": "0xabcdef..."
 }
 ```
 
-**Response `200`:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `wallet_address` | string | Yes | Ethereum wallet address (must match the challenge request) |
+| `signature` | string | Yes | EIP-191 personal signature of the challenge message |
+
+**Example request:**
+
+```bash
+curl -X POST https://api.polydesk.io/api/v1/auth/wallet/verify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "wallet_address": "0x1234567890abcdef1234567890abcdef12345678",
+    "signature": "0xabcdef1234567890..."
+  }'
+```
+
+**Example response:**
 
 ```json
 {
-  "access_token": "eyJ...",
-  "refresh_token": "rt_opaque_30day_token",
-  "expires_in": 900
+  "access_token": "eyJhbGciOiJIUzI1NiJ9...",
+  "refresh_token": "rt_wallet_xyz...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": "usr_def456",
+    "wallet_address": "0x1234567890abcdef1234567890abcdef12345678",
+    "display_name": null,
+    "created_at": "2026-03-31T12:00:05Z"
+  }
 }
 ```
-
-The `access_token` is a JWT with a 15-minute TTL. Use `Authorization: Bearer <token>` in subsequent requests.
 
 ---
 
-## POST /auth/wallet/refresh
+## GET /auth/me
 
-Exchange a refresh token for a new access token.
+Returns the authenticated user's profile.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/auth/me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+```
+
+**Example response:**
+
+```json
+{
+  "id": "usr_abc123",
+  "email": "user@example.com",
+  "display_name": "Trader One",
+  "avatar_url": "https://lh3.googleusercontent.com/a/...",
+  "wallet_address": "0x1234567890abcdef1234567890abcdef12345678",
+  "tier": "pro",
+  "created_at": "2026-01-15T10:00:00Z"
+}
+```
+
+---
+
+## PATCH /auth/me
+
+Update the authenticated user's display name.
 
 **Request body:**
 
 ```json
 {
-  "refresh_token": "rt_opaque_30day_token"
+  "display_name": "AlphaTrader"
 }
 ```
 
-**Response `200`:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `display_name` | string | Yes | New display name (3-30 characters, alphanumeric and underscores) |
+
+**Example request:**
+
+```bash
+curl -X PATCH https://api.polydesk.io/api/v1/auth/me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{"display_name": "AlphaTrader"}'
+```
+
+**Example response:**
 
 ```json
 {
-  "access_token": "eyJ...",
-  "expires_in": 900
+  "id": "usr_abc123",
+  "display_name": "AlphaTrader",
+  "updated_at": "2026-03-31T12:00:00Z"
 }
 ```
 
@@ -155,70 +218,107 @@ Exchange a refresh token for a new access token.
 
 ## GET /auth/keys
 
-List all API keys for the authenticated account.
+Returns all API keys for the authenticated user.
 
-**Headers:** `Authorization: Bearer <access_token>`
+**Example request:**
 
-**Response `200`:**
+```bash
+curl https://api.polydesk.io/api/v1/auth/keys \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+```
+
+**Example response:**
 
 ```json
 {
   "keys": [
     {
-      "key_id": "key_xyz789",
-      "name": "Production bot",
-      "prefix": "pm_live_sk_xxxx",
-      "scopes": ["markets:read", "orders:write", "portfolio:read"],
-      "created_at": "2026-03-19T10:00:00Z",
-      "last_used_at": "2026-03-19T14:30:00Z"
+      "key_id": "key_abc123",
+      "name": "Production Bot",
+      "prefix": "pk_live_abc1****",
+      "scopes": ["read", "trade"],
+      "created_at": "2026-02-01T10:00:00Z",
+      "last_used_at": "2026-03-31T11:58:00Z"
+    },
+    {
+      "key_id": "key_def456",
+      "name": "Read Only",
+      "prefix": "pk_live_def4****",
+      "scopes": ["read"],
+      "created_at": "2026-03-15T08:00:00Z",
+      "last_used_at": "2026-03-30T22:00:00Z"
     }
   ]
 }
 ```
 
-Note: The full API key value is not returned in list responses (only the prefix for identification).
-
 ---
 
 ## POST /auth/keys
 
-Create a new API key.
-
-**Headers:** `Authorization: Bearer <access_token>`
+Create a new API key with specified scopes.
 
 **Request body:**
 
 ```json
 {
-  "name": "My trading bot",
-  "scopes": ["markets:read", "orders:write", "portfolio:read", "data:read"]
+  "name": "Trading Bot v2",
+  "scopes": ["read", "trade"]
 }
 ```
 
-**Response `201`:**
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Human-readable name for the key |
+| `scopes` | string[] | Yes | Permission scopes: `read`, `trade`, `admin` |
+
+**Example request:**
+
+```bash
+curl -X POST https://api.polydesk.io/api/v1/auth/keys \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Trading Bot v2", "scopes": ["read", "trade"]}'
+```
+
+**Example response:**
 
 ```json
 {
-  "key_id": "key_xyz789",
-  "name": "My trading bot",
-  "api_key": "pm_live_sk_xxxxxxxxxxxxxxxx",
-  "scopes": ["markets:read", "orders:write", "portfolio:read", "data:read"],
-  "created_at": "2026-03-19T10:00:00Z"
+  "key_id": "key_ghi789",
+  "name": "Trading Bot v2",
+  "api_key": "pk_live_ghi789_full_secret_shown_once",
+  "scopes": ["read", "trade"],
+  "created_at": "2026-03-31T12:00:00Z"
 }
 ```
 
-<Callout type="warn">
-  The full `api_key` value is only returned once at creation time. Store it securely.
-</Callout>
+> **Important:** The full `api_key` value is only returned once at creation time. Store it securely. It cannot be retrieved again.
 
 ---
 
 ## DELETE /auth/keys/\{key_id\}
 
-Revoke an API key immediately.
+Permanently deletes an API key. Any requests using this key will immediately fail.
 
-**Headers:** `Authorization: Bearer <access_token>`
+**Path parameters:**
 
-**Response `204`:** No content.
+| Param | Type | Description |
+|---|---|---|
+| `key_id` | string | API key identifier |
 
-Revocation is immediate. Any in-flight requests using the revoked key will fail with `401`.
+**Example request:**
+
+```bash
+curl -X DELETE https://api.polydesk.io/api/v1/auth/keys/key_def456 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+```
+
+**Example response:**
+
+```json
+{
+  "key_id": "key_def456",
+  "deleted": true
+}
+```

@@ -1,0 +1,183 @@
+---
+title: Developer
+description: API usage tracking, billing management, webhook health, and account controls
+---
+
+# Developer
+
+Base path: `/api/v1/developer`
+
+Monitor your API usage, manage billing and tier upgrades, check webhook health, and control risk parameters like the daily drawdown circuit breaker.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/developer/usage` | API calls today, remaining quota, tier | API Key |
+| `GET` | `/developer/billing` | Current billing status and next billing date | API Key |
+| `POST` | `/developer/billing/upgrade` | Upgrade account tier | API Key |
+| `GET` | `/developer/webhooks` | Webhook health status | API Key |
+| `POST` | `/developer/risk/reset` | Reset daily drawdown circuit breaker | API Key |
+
+---
+
+## GET /developer/usage
+
+Returns your current API usage for the billing period, including calls made today, remaining quota, and rate limit status.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/developer/usage \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "tier": "pro",
+  "billing_period": "2026-03",
+  "calls_today": 4521,
+  "calls_this_month": 142000,
+  "monthly_quota": 1000000,
+  "remaining": 858000,
+  "rate_limit": {
+    "requests_per_second": 50,
+    "current_usage_pct": 12.5
+  }
+}
+```
+
+---
+
+## GET /developer/billing
+
+Returns your current billing status, plan details, and next billing date.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/developer/billing \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "tier": "pro",
+  "status": "active",
+  "monthly_price_usd": 99.00,
+  "current_period_start": "2026-03-01T00:00:00Z",
+  "current_period_end": "2026-03-31T23:59:59Z",
+  "next_billing_date": "2026-04-01",
+  "payment_method": "visa_****4242"
+}
+```
+
+---
+
+## POST /developer/billing/upgrade
+
+Upgrade your account to a higher tier. The change takes effect immediately and is prorated for the current billing period.
+
+**Request body:**
+
+```json
+{
+  "tier": "pro"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `tier` | string | Yes | Target tier: `starter` or `pro` |
+
+**Example request:**
+
+```bash
+curl -X POST https://api.polydesk.io/api/v1/developer/billing/upgrade \
+  -H "X-API-Key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tier": "pro"}'
+```
+
+**Example response:**
+
+```json
+{
+  "previous_tier": "starter",
+  "new_tier": "pro",
+  "effective_at": "2026-03-31T12:00:00Z",
+  "prorated_charge_usd": 49.50,
+  "new_monthly_price_usd": 99.00
+}
+```
+
+---
+
+## GET /developer/webhooks
+
+Returns the health status of all registered webhooks, including delivery success rates and recent failures.
+
+**Example request:**
+
+```bash
+curl https://api.polydesk.io/api/v1/developer/webhooks \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "webhooks": [
+    {
+      "webhook_id": "wh_abc123",
+      "url": "https://example.com/hooks/polydesk",
+      "status": "healthy",
+      "events": ["order.filled", "position.closed"],
+      "success_rate_24h": 0.998,
+      "last_delivery_at": "2026-03-31T11:58:00Z",
+      "last_failure_at": null
+    },
+    {
+      "webhook_id": "wh_def456",
+      "url": "https://example.com/hooks/alerts",
+      "status": "degraded",
+      "events": ["price.alert"],
+      "success_rate_24h": 0.92,
+      "last_delivery_at": "2026-03-31T11:55:00Z",
+      "last_failure_at": "2026-03-31T11:50:00Z",
+      "last_failure_reason": "HTTP 503"
+    }
+  ]
+}
+```
+
+---
+
+## POST /developer/risk/reset
+
+Resets the daily drawdown circuit breaker. When your account hits the daily loss limit, all new orders are blocked. Use this endpoint to manually re-enable trading after reviewing your positions.
+
+**Example request:**
+
+```bash
+curl -X POST https://api.polydesk.io/api/v1/developer/risk/reset \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "circuit_breaker": "reset",
+  "previous_state": "tripped",
+  "daily_loss_usd": -2450.00,
+  "daily_loss_limit_usd": -5000.00,
+  "reset_at": "2026-03-31T12:00:00Z",
+  "next_auto_reset": "2026-04-01T00:00:00Z"
+}
+```

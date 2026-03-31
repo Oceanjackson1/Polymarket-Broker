@@ -1,0 +1,86 @@
+---
+title: Arbitrage Spreads
+description: Cross-platform price spreads and arbitrage opportunities between Polymarket and Kalshi.
+---
+
+# Arbitrage Spreads
+
+Base path: `/api/v1/data/dome/arbitrage`
+
+Identify cross-platform price discrepancies between Polymarket and Kalshi. Browse current spreads and find high-spread arbitrage opportunities.
+
+## Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/data/dome/arbitrage/spreads` | Cross-platform price spreads | API Key |
+| `GET` | `/data/dome/arbitrage/opportunities` | High-spread opportunities above threshold | API Key |
+
+---
+
+## GET /data/dome/arbitrage/spreads
+
+Returns current price spreads between matched Polymarket and Kalshi markets. Filter by sport category or minimum spread size.
+
+**Query parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `sport` | string | No | Filter by sport category (e.g., `nba`, `nfl`, `mlb`) |
+| `min_spread_bps` | integer | No | Minimum spread in basis points (1 bps = 0.01%) |
+| `limit` | integer | No | Maximum number of results to return |
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/arbitrage/spreads?sport=nba&min_spread_bps=100&limit=10" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "spreads": [
+    {
+      "polymarket_slug": "nba-lakers-win-championship-2026",
+      "kalshi_ticker": "NBA-LAL-CHAMP-2026",
+      "polymarket_price": 0.35,
+      "kalshi_price": 0.38,
+      "spread_bps": 300,
+      "sport": "nba",
+      "updated_at": "2026-03-31T12:00:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+---
+
+## GET /data/dome/arbitrage/opportunities
+
+Returns arbitrage opportunities where the spread exceeds a profitable threshold, accounting for fees and execution risk.
+
+**Example request:**
+```bash
+curl "https://polydesk.eu.cc/api/v1/data/dome/arbitrage/opportunities" \
+  -H "X-API-Key: YOUR_KEY"
+```
+
+**Example response:**
+```json
+{
+  "opportunities": [
+    {
+      "polymarket_slug": "nba-lakers-win-championship-2026",
+      "kalshi_ticker": "NBA-LAL-CHAMP-2026",
+      "polymarket_price": 0.35,
+      "kalshi_price": 0.38,
+      "spread_bps": 300,
+      "direction": "buy_polymarket_sell_kalshi",
+      "estimated_profit_bps": 180,
+      "sport": "nba",
+      "updated_at": "2026-03-31T12:00:00Z"
+    }
+  ],
+  "count": 1
+}
+```

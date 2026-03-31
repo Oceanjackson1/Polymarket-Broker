@@ -24,7 +24,7 @@ async def test_wallet_verify_valid_signature(client, test_redis):
         json={"wallet_address": address})
     nonce = challenge.json()["nonce"]
 
-    msg = encode_defunct(text=f"Sign in to Polymarket Broker\nNonce: {nonce}")
+    msg = encode_defunct(text=f"Sign in to Polydesk\nNonce: {nonce}")
     signed = account.sign_message(msg)
 
     verify = await client.post("/api/v1/auth/wallet/verify", json={

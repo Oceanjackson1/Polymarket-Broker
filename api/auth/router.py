@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import redis.asyncio as aioredis
 from typing import Optional
 
@@ -9,13 +11,14 @@ from api.deps import get_current_user_id, get_current_user_from_api_key
 from api.auth.service import AuthService
 from api.auth.models import User
 from api.auth.schemas import (
-    RegisterRequest, LoginRequest, TokenResponse, UserResponse,
+    TokenResponse, UserResponse,
     ApiKeyCreateRequest, ApiKeyCreatedResponse, ApiKeyListItem,
 )
 from core.security import decode_access_token
+from core.config import get_settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
+settings = get_settings()
 
 ALL_SCOPES = [
     "data:read", "markets:read", "orders:write", "portfolio:read",
@@ -42,15 +45,70 @@ async def _resolve_user_id_flexible(
     raise HTTPException(401, detail="Missing authentication")
 
 
-@router.post("/register", response_model=UserResponse, status_code=201)
-async def register(body: RegisterRequest, db: AsyncSession = Depends(get_session)):
-    return await AuthService(db).register(body.email, body.password)
+# ── Google OAuth ──────────────────────────────────────────────────────────────
 
 
-@router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_session)):
-    tokens = await AuthService(db).login(body.email, body.password)
+class GoogleAuthRequest(BaseModel):
+    credential: str
+
+
+@router.post("/google", response_model=TokenResponse)
+async def google_auth(body: GoogleAuthRequest, db: AsyncSession = Depends(get_session)):
+    """Verify Google ID token and sign in (auto-register if new user)."""
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as google_requests
+
+    if not settings.google_client_id:
+        raise HTTPException(501, detail="Google OAuth not configured")
+
+    # Verify Google ID token
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            body.credential,
+            google_requests.Request(),
+            settings.google_client_id,
+        )
+    except ValueError:
+        raise HTTPException(401, detail="Invalid Google credential")
+
+    email = idinfo.get("email")
+    email_verified = idinfo.get("email_verified", False)
+    if not email or not email_verified:
+        raise HTTPException(401, detail="Google account email not verified")
+
+    google_sub = idinfo.get("sub")
+    name = idinfo.get("name", "")
+    picture = idinfo.get("picture", "")
+
+    # Find or create user
+    user = await db.scalar(select(User).where(User.email == email))
+    if not user:
+        user = User(
+            email=email,
+            hashed_password="",  # No password for Google users
+            google_sub=google_sub,
+            display_name=name,
+            avatar_url=picture,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+    else:
+        # Update Google info on existing user
+        if not user.google_sub:
+            user.google_sub = google_sub
+        if name and not user.display_name:
+            user.display_name = name
+        if picture:
+            user.avatar_url = picture
+        await db.commit()
+
+    # Issue tokens
+    tokens = AuthService(db)._issue_tokens(user)
     return {**tokens, "token_type": "bearer"}
+
+
+# ── Auth: Me, Keys ────────────────────────────────────────────────────────────
 
 
 @router.get("/me", response_model=UserResponse)
@@ -58,7 +116,6 @@ async def get_me(
     user_id: str = Depends(_resolve_user_id_flexible),
     db: AsyncSession = Depends(get_session),
 ):
-    from sqlalchemy import select
     user = await db.scalar(select(User).where(User.id == user_id))
     if not user:
         raise HTTPException(404, detail="USER_NOT_FOUND")
@@ -91,6 +148,9 @@ async def delete_key(
 ):
     await AuthService(db).delete_api_key(user_id, key_id)
     return Response(status_code=204)
+
+
+# ── Wallet Auth ───────────────────────────────────────────────────────────────
 
 
 @router.post("/wallet/challenge")

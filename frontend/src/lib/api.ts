@@ -21,7 +21,6 @@ async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  // Read API key from cookie (set by auth flow)
   let apiKey: string | null = null;
   if (typeof document !== "undefined") {
     const match = document.cookie.match(/(?:^|;\s*)pm_api_key=([^;]+)/);
@@ -42,14 +41,12 @@ async function apiFetch<T>(
       const body = (await res.json()) as { detail?: string; message?: string };
       message = body.detail ?? body.message ?? message;
     } catch {
-      // non-JSON error body — keep statusText
+      // non-JSON error body
     }
     throw new ApiError(res.status, res.statusText, message);
   }
 
-  // 204 No Content
   if (res.status === 204) return undefined as T;
-
   return res.json() as Promise<T>;
 }
 
@@ -59,6 +56,9 @@ export interface UserResponse {
   id: string;
   email: string;
   tier: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  wallet_address: string | null;
   created_at: string;
 }
 
@@ -88,16 +88,6 @@ export interface ApiKeyCreatedResponse {
   created_at: string;
 }
 
-export interface RegisterRequest {
-  email: string;
-  password: string;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
 export interface CreateApiKeyRequest {
   name: string;
   scopes?: string[];
@@ -115,18 +105,6 @@ export interface UsageResponse {
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
-  register: (req: RegisterRequest): Promise<TokenResponse> =>
-    apiFetch<TokenResponse>("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-
-  login: (req: LoginRequest): Promise<TokenResponse> =>
-    apiFetch<TokenResponse>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-
   me: (): Promise<UserResponse> => apiFetch<UserResponse>("/auth/me"),
 
   apiKeys: (): Promise<ApiKeyListItem[]> =>

@@ -45,7 +45,7 @@ export default function TgEntryPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="p-4">
-        <h1 className="text-xl font-bold mb-4">Polymarket Broker</h1>
+        <h1 className="text-xl font-bold mb-4">Polydesk</h1>
         <nav className="grid grid-cols-2 gap-2">
           <a href="/tg/markets" className="p-4 rounded-lg bg-card border text-center">
             Markets

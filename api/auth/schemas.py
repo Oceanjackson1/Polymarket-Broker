@@ -22,6 +22,9 @@ class UserResponse(BaseModel):
     id: str
     email: str
     tier: str
+    display_name: str | None = None
+    avatar_url: str | None = None
+    wallet_address: str | None = None
     created_at: datetime
     model_config = {"from_attributes": True}
 

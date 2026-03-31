@@ -3,13 +3,13 @@ import Link from "next/link";
 import { HeroSection, ExclusiveFeaturesGrid } from "./_components/hero-section";
 
 export const metadata: Metadata = {
-  title: "Polydesk — Institutional Prediction Market Terminal",
+  title: "Polydesk — The Data Layer for Prediction Markets",
   description:
-    "Trade prediction markets with institutional-grade tools. Real-time NBA fusion data, 145-sport orderbooks, BTC multi-timeframe predictions, and AI pricing-bias analysis.",
+    "80+ API endpoints for prediction market data. Cross-platform arbitrage, real-time NBA fusion, BTC multi-timeframe predictions, 40+ bookmaker odds, weather ensemble forecasts, and AI pricing-bias analysis.",
   openGraph: {
-    title: "Polydesk — Institutional Prediction Market Terminal",
+    title: "Polydesk — The Data Layer for Prediction Markets",
     description:
-      "The only broker providing NBA×Polymarket real-time fusion data, AI pricing-bias analysis, and convergence arbitrage execution.",
+      "The only API providing cross-platform arbitrage signals, NBA live fusion data, and AI pricing-bias analysis for Polymarket.",
   },
 };
 
@@ -19,7 +19,7 @@ const jsonLd = {
   name: "Polydesk",
   applicationCategory: "FinanceApplication",
   operatingSystem: "Web",
-  description: "Institutional-grade prediction market trading platform.",
+  description: "API-first prediction market data platform for traders and developers.",
   offers: [
     { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
     { "@type": "Offer", name: "Pro", price: "99", priceCurrency: "USD", billingIncrement: "P1M" },
@@ -28,40 +28,72 @@ const jsonLd = {
 
 const features = [
   {
-    title: "NBA Live Fusion",
-    description: "Real-time ESPN scores fused with Polymarket odds. AI-powered bias signals detect mispricing as it happens.",
+    title: "Cross-Platform Arbitrage",
+    description: "Real-time price spreads between Polymarket and Kalshi. Auto-detected opportunities with spread magnitude in basis points.",
     badge: "Exclusive",
-    href: "/docs/guides/nba-fusion-trading",
+    href: "/docs",
     isAI: false,
   },
   {
-    title: "145-Sport Orderbooks",
-    description: "Full historical order book data across NBA, NFL, UFC, CS2 and 141 more sport and esport categories.",
+    title: "NBA Live Fusion",
+    description: "ESPN live scores fused with Polymarket odds every 30 seconds. Bias signals detect mispricing as games unfold.",
     badge: "Exclusive",
-    href: "/docs/guides/sports-orderbooks",
+    href: "/docs",
+    isAI: false,
+  },
+  {
+    title: "40+ Bookmaker Odds",
+    description: "Aggregated odds from 40+ bookmakers across 12 sports. Compare implied probabilities against Polymarket prices to find edge.",
+    badge: "Exclusive",
+    href: "/docs",
     isAI: false,
   },
   {
     title: "BTC Multi-Timeframe",
-    description: "Four prediction timeframes from 5 minutes to 4 hours. On-chain trade data with millisecond precision.",
+    description: "Four prediction windows from 5 minutes to 4 hours. Fused with CoinGlass derivatives: funding rates, OI, liquidations.",
     badge: "Exclusive",
-    href: "/docs/guides/btc-multiframe",
+    href: "/docs",
+    isAI: false,
+  },
+  {
+    title: "Weather Ensemble Forecasts",
+    description: "51-member ensemble forecasts for 20+ cities. Per-temperature-bin probability vs market price with bias signals.",
+    badge: "Exclusive",
+    href: "/docs",
     isAI: false,
   },
   {
     title: "AI Pricing Analysis",
-    description: "DeepSeek-powered market scanner. Automatically surfaces the highest-magnitude pricing bias opportunities across all markets.",
+    description: "DeepSeek-powered scanner finds the highest-magnitude mispricing across all markets. Ask questions in natural language.",
     badge: "AI",
-    href: "/docs/api-reference/analysis",
+    href: "/docs",
     isAI: true,
   },
 ];
 
 const steps = [
-  { n: "01", title: "Create API Key", desc: "Register in 30 seconds. Get your API key instantly. Two auth paths: API Key or Ethereum wallet." },
-  { n: "02", title: "Access Exclusive Data", desc: "REST API and WebSocket streams for NBA fusion, BTC predictions, and 145 sport orderbooks." },
-  { n: "03", title: "Discover Opportunities", desc: "AI engine scans every market for pricing bias. Get alerted when magnitude exceeds your threshold." },
-  { n: "04", title: "Execute Trades", desc: "One-click hosted orders or non-custodial local signing. Convergence arbitrage runs automatically." },
+  { n: "01", title: "Get Your API Key", desc: "Sign in with Google or connect your wallet. Get your API key in 30 seconds, start calling endpoints immediately." },
+  { n: "02", title: "Access Exclusive Data", desc: "REST API and WebSocket streams for cross-platform spreads, live sports fusion, BTC predictions, and weather forecasts." },
+  { n: "03", title: "Find Mispricing", desc: "Every data point comes with a bias signal in basis points. Filter by magnitude to focus on the highest-edge opportunities." },
+  { n: "04", title: "Execute or Build", desc: "Trade directly via hosted or non-custodial orders. Or feed the data into your own models and execution systems." },
+];
+
+const useCases = [
+  {
+    persona: "Quant Traders",
+    description: "Build automated strategies on cross-platform arbitrage signals. Backtest with historical spreads, execute via API.",
+    example: "Polymarket vs Kalshi spread > 200bps \u2192 auto-execute convergence trade",
+  },
+  {
+    persona: "Sports Bettors",
+    description: "Compare 40+ bookmaker odds against Polymarket in real-time. Find mispriced events before the market corrects.",
+    example: "Bookmaker consensus 72% vs Polymarket 65% \u2192 +700bps bias detected",
+  },
+  {
+    persona: "Developers",
+    description: "80+ endpoints, full OpenAPI spec, WebSocket streams. Build dashboards, bots, or analytics tools on top of our data.",
+    example: "One API call returns score + odds + bias signal \u2192 build your own alerts",
+  },
 ];
 
 export default function LandingPage() {
@@ -90,8 +122,44 @@ export default function LandingPage() {
               <br />
               <span className="text-white/30">Cannot Provide</span>
             </h2>
+            <p className="mt-6 text-[17px] text-white/40">
+              We fuse multiple external sources with Polymarket prices to compute bias signals you can&apos;t get anywhere else.
+            </p>
           </div>
           <ExclusiveFeaturesGrid features={features} />
+        </div>
+      </section>
+
+      {/* ═══ Divider ═══ */}
+      <div className="mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      {/* ═══ Who is this for ═══ */}
+      <section className="bg-black py-32">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mx-auto mb-20 max-w-2xl text-center">
+            <p className="mb-4 text-sm font-medium tracking-widest text-white/30">
+              BUILT FOR
+            </p>
+            <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
+              Traders, Bettors
+              <br />
+              <span className="text-white/30">& Developers</span>
+            </h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {useCases.map((uc) => (
+              <div
+                key={uc.persona}
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8"
+              >
+                <h3 className="mb-3 text-lg font-semibold text-white">{uc.persona}</h3>
+                <p className="text-[15px] leading-relaxed text-white/40">{uc.description}</p>
+                <div className="mt-6 rounded-xl bg-white/[0.03] px-4 py-3">
+                  <p className="font-mono text-[13px] leading-relaxed text-white/30">{uc.example}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -131,12 +199,13 @@ export default function LandingPage() {
 
       {/* ═══ Stats ═══ */}
       <section className="bg-black py-24">
-        <div className="mx-auto grid max-w-4xl grid-cols-2 gap-8 px-6 md:grid-cols-4">
+        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 px-6 md:grid-cols-5">
           {[
-            { v: "145+", l: "Sports & Esports" },
-            { v: "<30ms", l: "API Latency" },
+            { v: "80+", l: "API Endpoints" },
+            { v: "40+", l: "Bookmakers" },
+            { v: "12", l: "Sports Covered" },
+            { v: "20+", l: "Weather Cities" },
             { v: "24/7", l: "Data Collection" },
-            { v: "4", l: "BTC Timeframes" },
           ].map((s) => (
             <div key={s.l} className="text-center">
               <p className="font-mono text-4xl font-semibold text-white">{s.v}</p>
@@ -163,34 +232,34 @@ export default function LandingPage() {
                 <span className="text-white/30">By Design</span>
               </h2>
               <p className="mt-6 text-[17px] leading-relaxed text-white/50">
-                Our own dashboard calls the same API you do.
-                Every endpoint, every feature, identical access
+                Our own console calls the same API you do.
+                Every endpoint, every feature, identical access.
               </p>
               <ul className="mt-10 space-y-5">
                 {[
                   "REST API + WebSocket real-time streams",
-                  "API Key + Ethereum wallet authentication",
+                  "Google + MetaMask + OKX Wallet authentication",
                   "Hosted and non-custodial order modes",
                   "Full OpenAPI specification",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-4 text-[15px] text-white/50">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.06] text-xs text-white/60">✓</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.06] text-xs text-white/60">{"\u2713"}</span>
                     {item}
                   </li>
                 ))}
               </ul>
               <div className="mt-10 flex gap-4">
                 <Link
-                  href="/docs/getting-started/quickstart"
+                  href="/docs"
                   className="rounded-full bg-white px-7 py-3 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
                 >
-                  Quick Start
+                  API Docs
                 </Link>
                 <Link
-                  href="/docs"
+                  href="/login"
                   className="rounded-full border border-white/15 px-7 py-3 text-[15px] font-medium text-white transition-all hover:border-white/30"
                 >
-                  Full Docs
+                  Get API Key
                 </Link>
               </div>
             </div>
@@ -206,14 +275,16 @@ export default function LandingPage() {
               <pre className="p-6 text-[13px] leading-7">
                 <code>
                   <span className="text-blue-400">import</span> <span className="text-white">requests</span>{"\n\n"}
-                  <span className="text-white/25"># One call to get score, odds, bias signal</span>{"\n"}
-                  <span className="text-white">r</span> = requests.<span className="text-blue-400">get</span>({"\n"}
-                  {"  "}<span className="text-emerald-400">&quot;/api/v1/data/nba/games/gsw-lal/fusion&quot;</span>,{"\n"}
-                  {"  "}headers={"{"}<span className="text-emerald-400">&quot;X-API-Key&quot;</span>: key{"}"}{"\n"}
-                  ){"\n\n"}
-                  <span className="text-white/25"># Bias detected, execute trade</span>{"\n"}
-                  <span className="text-blue-400">if</span> r.json()[<span className="text-emerald-400">&quot;magnitude_bps&quot;</span>] &gt; <span className="text-purple-400">300</span>:{"\n"}
-                  {"  "}place_order(<span className="text-emerald-400">&quot;BUY&quot;</span>, size=<span className="text-purple-400">100</span>)
+                  <span className="text-white/25"># Cross-platform arbitrage scan</span>{"\n"}
+                  <span className="text-white">spreads</span> = requests.<span className="text-blue-400">get</span>({"\n"}
+                  {"  "}<span className="text-emerald-400">&quot;/api/v1/data/dome/arbitrage/spreads&quot;</span>,{"\n"}
+                  {"  "}headers={"{"}<span className="text-emerald-400">&quot;X-API-Key&quot;</span>: key{"}"},{"\n"}
+                  {"  "}params={"{"}<span className="text-emerald-400">&quot;min_spread_bps&quot;</span>: <span className="text-purple-400">100</span>{"}"}{"\n"}
+                  ).json(){"\n\n"}
+                  <span className="text-white/25"># High spread found, execute trade</span>{"\n"}
+                  <span className="text-blue-400">for</span> opp <span className="text-blue-400">in</span> spreads[<span className="text-emerald-400">&quot;data&quot;</span>]:{"\n"}
+                  {"  "}<span className="text-blue-400">if</span> opp[<span className="text-emerald-400">&quot;spread_bps&quot;</span>] &gt; <span className="text-purple-400">200</span>:{"\n"}
+                  {"    "}place_order(opp[<span className="text-emerald-400">&quot;polymarket_slug&quot;</span>])
                 </code>
               </pre>
             </div>
@@ -226,23 +297,25 @@ export default function LandingPage() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="mx-auto max-w-2xl px-6 text-center">
           <h2 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
-            Ready To Start
+            Find Edge Others Miss
           </h2>
           <p className="mt-6 text-[17px] text-white/50">
-            Free tier, no credit card, 500 API calls per day
+            Free tier, no credit card, 500 API calls per day.
+            <br />
+            Start receiving cross-platform arbitrage signals in minutes.
           </p>
           <div className="mt-10 flex items-center justify-center gap-4">
             <Link
-              href="/dashboard"
+              href="/login"
               className="rounded-full bg-white px-10 py-4 text-base font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
             >
               Get Started Free
             </Link>
             <Link
-              href="/pricing"
+              href="/docs"
               className="rounded-full border border-white/15 px-10 py-4 text-base font-medium text-white transition-all hover:border-white/30"
             >
-              View Pricing
+              View API Docs
             </Link>
           </div>
         </div>

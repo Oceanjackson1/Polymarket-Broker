@@ -1,6 +1,6 @@
 import Script from "next/script";
 
-export const metadata = { title: "Polymarket Broker" };
+export const metadata = { title: "Polydesk" };
 
 export default function TgLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy Polymarket Broker to Tencent Cloud
+# Deploy Polydesk to Tencent Cloud
 # Usage: ./deploy/deploy.sh <server_ip> [ssh_key_path]
 
 set -e

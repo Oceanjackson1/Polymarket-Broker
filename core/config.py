@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     deepseek_model: str = "deepseek-chat"
     analysis_daily_quota_free: int = 10
 
+    # Google OAuth
+    google_client_id: str = ""
+
     # Telegram Bot
     tg_bot_token: str = ""
     tg_webhook_secret: str = ""  # random string to verify webhook origin

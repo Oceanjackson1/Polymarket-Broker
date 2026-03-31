@@ -20,7 +20,7 @@ router = Router()
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     await message.answer(
-        "Welcome to Polymarket Broker!\n\n"
+        "Welcome to Polydesk!\n\n"
         "I can help you trade on prediction markets:\n"
         "- Search: 'bitcoin markets' or /markets bitcoin\n"
         "- Portfolio: /portfolio\n"

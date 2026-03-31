@@ -176,7 +176,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Polymarket Broker API",
+    title="Polydesk API",
     version="1.0.0",
     lifespan=lifespan,
 )

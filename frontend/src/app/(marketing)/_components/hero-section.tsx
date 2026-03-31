@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 
-/* ─── Product Mockups (Apple-style: minimal, clean) ─── */
+/* ─── Product Mockups ─── */
 
-function DashboardPreview() {
+function ArbitragePreview() {
   return (
     <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a]">
       <div className="flex items-center gap-2 border-b border-white/[0.06] px-5 py-3">
@@ -14,31 +14,31 @@ function DashboardPreview() {
           <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
           <div className="h-3 w-3 rounded-full bg-[#28c840]" />
         </div>
-        <span className="ml-3 text-xs text-white/30">Polydesk</span>
+        <span className="ml-3 text-xs text-white/30">Polydesk — Arbitrage Scanner</span>
       </div>
       <div className="p-5">
-        {/* Stats */}
-        <div className="mb-4 grid grid-cols-4 gap-3">
-          {[
-            { l: "Portfolio", v: "$45,230.00" },
-            { l: "Today", v: "+$1,240.50", c: "text-emerald-400" },
-            { l: "Positions", v: "12" },
-            { l: "Win Rate", v: "68.4%" },
-          ].map((s) => (
-            <div key={s.l} className="rounded-xl bg-white/[0.04] p-3">
-              <p className="text-[10px] text-white/30">{s.l}</p>
-              <p className={`mt-0.5 font-mono text-sm font-medium ${s.c || "text-white"}`}>{s.v}</p>
-            </div>
-          ))}
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-xs font-medium uppercase tracking-widest text-white/30">Cross-Platform Spreads</p>
+          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-medium text-emerald-400">3 Opportunities</span>
         </div>
-        {/* Chart */}
-        <div className="flex h-32 items-end gap-[2px] rounded-xl bg-white/[0.02] p-4">
-          {[28,32,30,38,35,42,40,48,45,52,50,58,55,62,60,65,62,68,72,70,75,73,78,80,82,78,85,88,85,90].map((h, i) => (
-            <div
-              key={i}
-              className="flex-1 rounded-t bg-gradient-to-t from-white/20 to-white/5"
-              style={{ height: `${h}%` }}
-            />
+        {/* Spread rows */}
+        <div className="space-y-2">
+          {[
+            { event: "NBA Finals MVP", poly: "0.42", kalshi: "0.38", spread: "+400", dir: "BUY_POLY" },
+            { event: "BTC > $75k June", poly: "0.31", kalshi: "0.35", spread: "+400", dir: "BUY_KALSHI" },
+            { event: "Fed Rate Cut Jul", poly: "0.68", kalshi: "0.62", spread: "+600", dir: "BUY_POLY" },
+          ].map((r) => (
+            <div key={r.event} className="flex items-center justify-between rounded-xl bg-white/[0.03] px-4 py-3">
+              <div className="flex-1">
+                <p className="text-sm text-white">{r.event}</p>
+                <p className="mt-0.5 text-[11px] text-white/25">Poly {r.poly} vs Kalshi {r.kalshi}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-mono text-sm font-medium text-emerald-400">{r.spread} bps</p>
+                <p className="text-[10px] text-white/25">{r.dir}</p>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -78,11 +78,39 @@ function NbaPreview() {
   );
 }
 
+function OddsPreview() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a] p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-xs font-medium uppercase tracking-widest text-white/30">Bookmaker vs Polymarket</p>
+        <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/40">EPL</span>
+      </div>
+      <div className="space-y-2">
+        {[
+          { match: "Arsenal vs Chelsea", book: "72%", poly: "65%", bias: "+700" },
+          { match: "Liverpool vs City", book: "45%", poly: "48%", bias: "-300" },
+          { match: "Spurs vs United", book: "58%", poly: "53%", bias: "+500" },
+        ].map((r) => (
+          <div key={r.match} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2">
+            <span className="flex-1 text-xs text-white/50">{r.match}</span>
+            <span className="font-mono text-[11px] text-white/30">{r.book}</span>
+            <span className="text-[10px] text-white/20">vs</span>
+            <span className="font-mono text-[11px] text-white/30">{r.poly}</span>
+            <span className={`font-mono text-xs font-medium ${r.bias.startsWith("+") ? "text-emerald-400" : "text-red-400"}`}>
+              {r.bias}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BtcPreview() {
   return (
     <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a] p-5">
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs font-medium uppercase tracking-widest text-white/30">BTC Predictions</p>
+        <p className="text-xs font-medium uppercase tracking-widest text-white/30">BTC Fusion</p>
         <p className="font-mono text-sm font-medium text-white">$68,420</p>
       </div>
       <div className="space-y-2">
@@ -106,33 +134,9 @@ function BtcPreview() {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function CodePreview() {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a]">
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-5 py-3">
-        <div className="flex gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-[#ff5f57]" />
-          <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
-          <div className="h-3 w-3 rounded-full bg-[#28c840]" />
-        </div>
-        <span className="ml-3 text-xs text-white/30">main.py</span>
+      <div className="mt-3 rounded-lg bg-white/[0.03] px-3 py-2">
+        <p className="text-[10px] text-white/25">CoinGlass: Funding +0.012% · OI $18.2B · F&G 72</p>
       </div>
-      <pre className="p-5 text-[13px] leading-relaxed">
-        <code>
-          <span className="text-blue-400">import</span> <span className="text-white">requests</span>{"\n\n"}
-          <span className="text-white/30"># Get live NBA fusion data</span>{"\n"}
-          <span className="text-white">data</span> = requests.<span className="text-blue-400">get</span>({"\n"}
-          {"  "}<span className="text-emerald-400">&quot;/api/v1/data/nba/games/gsw-lal/fusion&quot;</span>{"\n"}
-          ).json(){"\n\n"}
-          <span className="text-white/30"># Auto-trade on pricing bias</span>{"\n"}
-          <span className="text-blue-400">if</span> data[<span className="text-emerald-400">&quot;magnitude_bps&quot;</span>] &gt; <span className="text-purple-400">300</span>:{"\n"}
-          {"  "}place_order(side=<span className="text-emerald-400">&quot;BUY&quot;</span>)
-        </code>
-      </pre>
     </div>
   );
 }
@@ -141,13 +145,12 @@ function CodePreview() {
 export function HeroSection() {
   return (
     <section className="relative bg-black">
-      {/* Subtle top glow */}
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[600px]">
         <div className="absolute left-1/2 top-0 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-white/[0.02] blur-[120px]" />
       </div>
 
       <div className="mx-auto max-w-6xl px-6 pb-4 pt-24 md:pt-36">
-        {/* ── Title Group ── */}
+        {/* ── Title ── */}
         <div className="mx-auto max-w-4xl text-center">
           <motion.p
             className="mb-8 text-[11px] font-medium uppercase tracking-[0.25em] text-white/20"
@@ -155,35 +158,34 @@ export function HeroSection() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
           >
-            Institutional Prediction Market Terminal
+            The Data Layer for Prediction Markets
           </motion.p>
 
           <motion.h1
-            className="text-[clamp(3rem,7vw,4.5rem)] font-semibold leading-[1.08] tracking-tight text-white"
+            className="text-[clamp(2.5rem,7vw,4.5rem)] font-semibold leading-[1.08] tracking-tight text-white"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
           >
-            Prediction Markets{" "}
-            <span className="text-white/20">Reimagined</span>
+            Find Edge{" "}
+            <span className="text-white/20">Others Miss</span>
           </motion.h1>
         </div>
 
-        {/* ── Description Group (tighter coupling to title) ── */}
+        {/* ── Description ── */}
         <motion.p
-          className="mx-auto mt-7 max-w-md text-center text-[17px] leading-[1.7] text-white/45"
+          className="mx-auto mt-7 max-w-lg text-center text-[17px] leading-[1.7] text-white/45"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.25 }}
         >
-          Exclusive data Polymarket does not offer.
+          Cross-platform arbitrage, 40+ bookmaker odds, live sports fusion,
+          weather ensemble forecasts, and AI pricing-bias analysis.
           <br />
-          NBA live fusion, BTC multi-timeframe predictions,
-          <br />
-          AI pricing-bias analysis, one unified API
+          <span className="text-white/60">One API. 80+ endpoints.</span>
         </motion.p>
 
-        {/* ── Action Group ── */}
+        {/* ── Actions ── */}
         <motion.div
           className="mt-12 flex items-center justify-center gap-3"
           initial={{ opacity: 0, y: 16 }}
@@ -191,7 +193,7 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.4 }}
         >
           <Link
-            href="/dashboard"
+            href="/login"
             className="rounded-full bg-white px-8 py-3.5 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98]"
           >
             Get Started Free
@@ -211,9 +213,9 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.5 }}
         >
-          {/* Dashboard — 8 cols */}
+          {/* Arbitrage Scanner — 8 cols */}
           <div className="md:col-span-8">
-            <DashboardPreview />
+            <ArbitragePreview />
           </div>
 
           {/* NBA — 4 cols */}
@@ -221,9 +223,9 @@ export function HeroSection() {
             <NbaPreview />
           </div>
 
-          {/* Code — 5 cols */}
+          {/* Odds — 5 cols */}
           <div className="md:col-span-5">
-            <CodePreview />
+            <OddsPreview />
           </div>
 
           {/* BTC — 7 cols */}
@@ -248,7 +250,7 @@ interface ExclusiveFeature {
 export function ExclusiveFeaturesGrid({ features }: { features: ExclusiveFeature[] }) {
   return (
     <motion.div
-      className="grid gap-4 md:grid-cols-2"
+      className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, margin: "-60px" }}
@@ -264,7 +266,11 @@ export function ExclusiveFeaturesGrid({ features }: { features: ExclusiveFeature
             className="group block rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 transition-all duration-300 hover:border-white/[0.12] hover:bg-white/[0.04]"
           >
             <div className="mb-4 flex items-center gap-3">
-              <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/60">
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${
+                feature.isAI
+                  ? "bg-blue-500/10 text-blue-400"
+                  : "bg-white/[0.06] text-white/60"
+              }`}>
                 {feature.badge}
               </span>
             </div>
@@ -275,7 +281,7 @@ export function ExclusiveFeaturesGrid({ features }: { features: ExclusiveFeature
               {feature.description}
             </p>
             <p className="mt-6 text-sm text-white/25 transition-colors group-hover:text-white/50">
-              Learn More
+              Learn More {"\u2192"}
             </p>
           </Link>
         </motion.div>

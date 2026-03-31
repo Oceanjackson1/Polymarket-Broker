@@ -1,74 +1,63 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authApi, ApiError } from "@/lib/api";
+import { walletLogin, WalletError, type WalletType } from "@/lib/wallet";
+
+const ALL_SCOPES = [
+  "data:read", "markets:read", "orders:write", "portfolio:read",
+  "analysis:read", "strategies:execute", "webhooks:write",
+];
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<WalletType | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function createKeyAndRedirect(accessToken: string) {
+    const keyRes = await fetch("/api/v1/auth/keys", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ name: "browser-session", scopes: ALL_SCOPES }),
+    });
+
+    if (!keyRes.ok) {
+      let msg = "Failed to create API key";
+      try {
+        const body = (await keyRes.json()) as { detail?: string };
+        msg = body.detail ?? msg;
+      } catch {}
+      throw new Error(msg);
+    }
+
+    const keyData = (await keyRes.json()) as { key: string };
+    document.cookie = `pm_api_key=${encodeURIComponent(keyData.key)}; path=/; SameSite=Lax`;
+    router.push("/console");
+  }
+
+  async function handleWalletLogin(wallet: WalletType) {
     setError(null);
-    setLoading(true);
-
+    setLoading(wallet);
     try {
-      // Step 1: Login → get access token
-      const auth = await authApi.login({ email, password });
-      const accessToken = auth.access_token;
-
-      // Step 2: Create an API key using the Bearer token
-      const keyRes = await fetch("/api/v1/auth/keys", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          name: "browser-session",
-          scopes: ["data:read", "markets:read", "orders:write", "portfolio:read", "analysis:read", "strategies:execute", "webhooks:write"],
-        }),
-      });
-
-      if (!keyRes.ok) {
-        let msg = "Failed to create API key";
-        try {
-          const body = await keyRes.json() as { detail?: string };
-          msg = body.detail ?? msg;
-        } catch {
-          // ignore
-        }
-        throw new Error(msg);
-      }
-
-      const keyData = await keyRes.json() as { key: string };
-
-      // Step 3: Store API key in cookie
-      document.cookie = `pm_api_key=${encodeURIComponent(keyData.key)}; path=/; SameSite=Lax`;
-
-      // Step 4: Redirect to dashboard
-      router.push("/console");
+      const accessToken = await walletLogin(wallet);
+      await createKeyAndRedirect(accessToken);
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status === 401 || err.status === 422) {
-          setError("Invalid email or password.");
-        } else {
-          setError(err.message);
-        }
+      if (err instanceof WalletError) {
+        setError(err.message);
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("An unexpected error occurred.");
       }
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   }
+
+  const isDisabled = loading !== null;
 
   return (
     <section className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-black px-4 py-16">
@@ -78,70 +67,50 @@ export default function LoginPage() {
             <h1 className="text-2xl font-semibold text-white">
               Sign in to Polydesk
             </h1>
-            <p className="mt-2 text-[15px] text-white/60">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/register"
-                className="text-white transition-colors hover:text-white/80"
-              >
-                Create one free
-              </Link>
+            <p className="mt-2 text-[15px] text-white/50">
+              Connect your wallet to continue.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-1.5 block text-[15px] font-medium text-white/60"
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-[15px] text-white placeholder-white/25 outline-none transition-colors focus:border-white/20 focus:ring-0"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="mb-1.5 block text-[15px] font-medium text-white/60"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-[15px] text-white placeholder-white/25 outline-none transition-colors focus:border-white/20 focus:ring-0"
-              />
-            </div>
-
-            {error && (
-              <p className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
-                {error}
-              </p>
-            )}
-
+          <div className="space-y-3">
+            {/* MetaMask */}
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-white px-4 py-2.5 text-[15px] font-medium text-black transition-all hover:bg-white/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => handleWalletLogin("metamask")}
+              disabled={isDisabled}
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-[15px] font-medium text-white transition-all hover:bg-white/[0.08] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" width="24" height="24" />
+              {loading === "metamask" ? "Connecting..." : "Continue with MetaMask"}
             </button>
-          </form>
+
+            {/* OKX Wallet */}
+            <button
+              onClick={() => handleWalletLogin("okx")}
+              disabled={isDisabled}
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-[15px] font-medium text-white transition-all hover:bg-white/[0.08] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <rect width="20" height="20" rx="4" fill="white" />
+                <rect x="3.5" y="3.5" width="5" height="5" rx="0.5" fill="black" />
+                <rect x="7.5" y="7.5" width="5" height="5" rx="0.5" fill="black" />
+                <rect x="11.5" y="3.5" width="5" height="5" rx="0.5" fill="black" />
+                <rect x="3.5" y="11.5" width="5" height="5" rx="0.5" fill="black" />
+                <rect x="11.5" y="11.5" width="5" height="5" rx="0.5" fill="black" />
+              </svg>
+              {loading === "okx" ? "Connecting..." : "Continue with OKX Wallet"}
+            </button>
+          </div>
+
+          {error && (
+            <p className="mt-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
+              {error}
+            </p>
+          )}
+
+          <p className="mt-6 text-center text-xs text-white/25">
+            Free plan: 500 API calls/day · No credit card required
+          </p>
         </div>
       </div>
     </section>

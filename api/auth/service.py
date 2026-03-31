@@ -39,13 +39,18 @@ class AuthService:
         await self.db.refresh(user)
         return user
 
+    def _issue_tokens(self, user) -> dict:
+        """Create access + refresh tokens for a user (sync, no DB write for refresh)."""
+        access = create_access_token({"sub": user.id, "tier": user.tier})
+        refresh = create_refresh_token(user.id)
+        return {"access_token": access, "refresh_token": refresh}
+
     async def login(self, email: str, password: str) -> dict:
         user = await self.db.scalar(select(User).where(User.email == email))
         if not user or not _verify_password(password, user.hashed_password):
             raise PermissionError("INVALID_CREDENTIALS")
-        access = create_access_token({"sub": user.id, "tier": user.tier})
-        refresh = create_refresh_token(user.id)
-        refresh_payload = decode_refresh_token(refresh)
+        tokens = self._issue_tokens(user)
+        refresh_payload = decode_refresh_token(tokens["refresh_token"])
         rt = RefreshToken(
             jti=refresh_payload["jti"],
             user_id=user.id,
@@ -53,7 +58,7 @@ class AuthService:
         )
         self.db.add(rt)
         await self.db.commit()
-        return {"access_token": access, "refresh_token": refresh}
+        return tokens
 
     async def create_api_key(self, user_id: str, name: str, scopes: list[str]) -> dict:
         raw_key = generate_api_key_value("pm_live_sk")
@@ -122,7 +127,7 @@ class AuthService:
         if not nonce:
             raise PermissionError("NONCE_EXPIRED_OR_NOT_FOUND")
 
-        msg = encode_defunct(text=f"Sign in to Polymarket Broker\nNonce: {nonce}")
+        msg = encode_defunct(text=f"Sign in to Polydesk\nNonce: {nonce}")
         try:
             recovered = Account.recover_message(msg, signature=signature)
         except Exception as exc:

@@ -1,4 +1,4 @@
-# Polymarket Broker — Polydesk
+# Polydesk — Polymarket Data Provider
 
 全栈预测市场经纪人平台：FastAPI 后端 + Next.js 交易终端，提供实时数据采集、AI 定价偏差分析、跨平台套利策略和完整的交易功能。
 

@@ -22,7 +22,7 @@ class CapabilityInfo(BaseModel):
 
 
 class CapabilitiesResponse(BaseModel):
-    agent_name: str = "polymarket-broker"
+    agent_name: str = "polydesk"
     version: str = "1.0.0"
     capabilities: list[CapabilityInfo]
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HeroSection, ExclusiveFeaturesGrid } from "./_components/hero-section";
+import { CountUp } from "@/components/effects/count-up";
 
 export const metadata: Metadata = {
   title: "Polydesk — The Data Layer for Prediction Markets",
@@ -201,17 +202,22 @@ export default function LandingPage() {
       <section className="bg-black py-24">
         <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 px-6 md:grid-cols-5">
           {[
-            { v: "80+", l: "API Endpoints" },
-            { v: "40+", l: "Bookmakers" },
-            { v: "12", l: "Sports Covered" },
-            { v: "20+", l: "Weather Cities" },
-            { v: "24/7", l: "Data Collection" },
+            { n: 80, suffix: "+", l: "API Endpoints" },
+            { n: 40, suffix: "+", l: "Bookmakers" },
+            { n: 12, suffix: "", l: "Sports Covered" },
+            { n: 20, suffix: "+", l: "Weather Cities" },
           ].map((s) => (
             <div key={s.l} className="text-center">
-              <p className="font-mono text-4xl font-semibold text-white">{s.v}</p>
+              <p className="font-mono text-4xl font-semibold text-white">
+                <CountUp target={s.n} suffix={s.suffix} duration={2} />
+              </p>
               <p className="mt-2 text-sm text-white/30">{s.l}</p>
             </div>
           ))}
+          <div className="text-center">
+            <p className="font-mono text-4xl font-semibold text-white">24/7</p>
+            <p className="mt-2 text-sm text-white/30">Data Collection</p>
+          </div>
         </div>
       </section>
 

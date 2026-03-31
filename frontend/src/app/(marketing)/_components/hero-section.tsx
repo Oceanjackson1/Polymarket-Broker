@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
+import { BlurText } from "@/components/effects/blur-text";
+import { Particles } from "@/components/effects/particles";
 
 /* ─── Product Mockups ─── */
 
@@ -144,12 +146,17 @@ function BtcPreview() {
 /* ═══ HERO ═══ */
 export function HeroSection() {
   return (
-    <section className="relative bg-black">
+    <section className="relative bg-black overflow-hidden">
+      {/* Particles background */}
+      <div className="absolute inset-0 h-[800px]">
+        <Particles count={35} speed={0.2} opacity={0.12} size={1.2} />
+      </div>
+      {/* Soft glow */}
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[600px]">
         <div className="absolute left-1/2 top-0 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-white/[0.02] blur-[120px]" />
       </div>
 
-      <div className="mx-auto max-w-6xl px-6 pb-4 pt-24 md:pt-36">
+      <div className="relative mx-auto max-w-6xl px-6 pb-4 pt-24 md:pt-36">
         {/* ── Title ── */}
         <div className="mx-auto max-w-4xl text-center">
           <motion.p
@@ -161,15 +168,10 @@ export function HeroSection() {
             The Data Layer for Prediction Markets
           </motion.p>
 
-          <motion.h1
-            className="text-[clamp(2.5rem,7vw,4.5rem)] font-semibold leading-[1.08] tracking-tight text-white"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-          >
-            Find Edge{" "}
-            <span className="text-white/20">Others Miss</span>
-          </motion.h1>
+          <h1 className="text-[clamp(2.5rem,7vw,4.5rem)] font-semibold leading-[1.08] tracking-tight">
+            <BlurText text="Find Edge" className="text-white" delay={0.2} />{" "}
+            <BlurText text="Others Miss" className="text-white/20" delay={0.5} />
+          </h1>
         </div>
 
         {/* ── Description ── */}
@@ -177,7 +179,7 @@ export function HeroSection() {
           className="mx-auto mt-7 max-w-lg text-center text-[17px] leading-[1.7] text-white/45"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.25 }}
+          transition={{ duration: 0.8, delay: 0.7 }}
         >
           Cross-platform arbitrage, 40+ bookmaker odds, live sports fusion,
           weather ensemble forecasts, and AI pricing-bias analysis.

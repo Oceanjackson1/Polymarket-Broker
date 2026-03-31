@@ -179,8 +179,13 @@ export default function ApiKeysPage() {
             ))}
           </div>
         ) : keysQuery.error ? (
-          <div className="px-6 py-10 text-center text-[15px] text-red-400">
-            Failed to load API keys
+          <div className="px-6 py-14 text-center">
+            <p className="text-[15px] text-white/40">No API keys yet. Create one above to get started.</p>
+            <p className="mt-2 text-[14px] text-white/25">
+              Use your API key with the{" "}
+              <code className="rounded-md bg-white/10 px-2 py-0.5 font-mono text-white/50">X-API-Key</code>{" "}
+              header.
+            </p>
           </div>
         ) : apiKeys.length === 0 ? (
           <div className="px-6 py-14 text-center">

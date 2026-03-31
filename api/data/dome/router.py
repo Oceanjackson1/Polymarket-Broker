@@ -345,3 +345,186 @@ async def get_crypto_price(
         raise
     except Exception as e:
         raise HTTPException(502, detail=f"Dome API error: {e}")
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Polymarket Events (real-time proxy)
+# ══════════════════════════════════════════════════════════════════
+
+def _get_dome(request: Request):
+    dome = getattr(request.app.state, "dome_client", None)
+    if not dome:
+        raise HTTPException(503, detail="DOME_CLIENT_NOT_CONFIGURED")
+    return dome
+
+
+@router.get("/events")
+async def list_events(
+    request: Request,
+    event_slug: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    include_markets: bool | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    auth: dict = Depends(get_current_user_from_api_key),
+):
+    """List Polymarket events (groups of related markets)."""
+    require_scope(auth, "data:read")
+    dome = _get_dome(request)
+    try:
+        return await dome.get_events(
+            event_slug=event_slug, status=status,
+            include_markets=include_markets, limit=limit,
+        )
+    except Exception as e:
+        raise HTTPException(502, detail=f"Dome API error: {e}")
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Polymarket Activity (merges, splits, redeems)
+# ══════════════════════════════════════════════════════════════════
+
+@router.get("/activity")
+async def list_activity(
+    request: Request,
+    user: str | None = Query(default=None),
+    market_slug: str | None = Query(default=None),
+    condition_id: str | None = Query(default=None),
+    start_time: int | None = Query(default=None),
+    end_time: int | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    auth: dict = Depends(get_current_user_from_api_key),
+):
+    """On-chain activity: merges, splits, and redeems."""
+    require_scope(auth, "data:read")
+    dome = _get_dome(request)
+    try:
+        return await dome.get_activity(
+            user=user, market_slug=market_slug, condition_id=condition_id,
+            start_time=start_time, end_time=end_time, limit=limit,
+        )
+    except Exception as e:
+        raise HTTPException(502, detail=f"Dome API error: {e}")
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Wallet Lookup
+# ══════════════════════════════════════════════════════════════════
+
+@router.get("/wallets/lookup")
+async def lookup_wallet(
+    request: Request,
+    eoa: str | None = Query(default=None),
+    proxy: str | None = Query(default=None),
+    handle: str | None = Query(default=None),
+    with_metrics: bool | None = Query(default=None),
+    auth: dict = Depends(get_current_user_from_api_key),
+):
+    """Look up wallet info by EOA address, proxy address, or user handle."""
+    require_scope(auth, "data:read")
+    dome = _get_dome(request)
+    try:
+        return await dome.get_wallet(
+            eoa=eoa, proxy=proxy, handle=handle, with_metrics=with_metrics,
+        )
+    except Exception as e:
+        raise HTTPException(502, detail=f"Dome API error: {e}")
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Kalshi Markets, Prices, Trades, Orderbook
+# ══════════════════════════════════════════════════════════════════
+
+@router.get("/kalshi/markets")
+async def list_kalshi_markets(
+    request: Request,
+    search: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    min_volume: int | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    auth: dict = Depends(get_current_user_from_api_key),
+):
+    """List Kalshi prediction markets."""
+    require_scope(auth, "data:read")
+    dome = _get_dome(request)
+    try:
+        return await dome.get_kalshi_markets(
+            search=search, status=status, min_volume=min_volume, limit=limit,
+        )
+    except Exception as e:
+        raise HTTPException(502, detail=f"Dome API error: {e}")
+
+
+@router.get("/kalshi/price/{market_ticker}")
+async def get_kalshi_price(
+    market_ticker: str,
+    request: Request,
+    at_time: int | None = Query(default=None),
+    auth: dict = Depends(get_current_user_from_api_key),
+):
+    """Current price for a Kalshi market."""
+    require_scope(auth, "data:read")
+    dome = _get_dome(request)
+    try:
+        return await dome.get_kalshi_price(market_ticker, at_time=at_time)
+    except Exception as e:
+        raise HTTPException(502, detail=f"Dome API error: {e}")
+
+
+@router.get("/kalshi/trades")
+async def list_kalshi_trades(
+    request: Request,
+    ticker: str | None = Query(default=None),
+    start_time: int | None = Query(default=None),
+    end_time: int | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    auth: dict = Depends(get_current_user_from_api_key),
+):
+    """Historical trade data for Kalshi markets."""
+    require_scope(auth, "data:read")
+    dome = _get_dome(request)
+    try:
+        return await dome.get_kalshi_trades(
+            ticker=ticker, start_time=start_time, end_time=end_time, limit=limit,
+        )
+    except Exception as e:
+        raise HTTPException(502, detail=f"Dome API error: {e}")
+
+
+@router.get("/kalshi/orderbook/{ticker}")
+async def get_kalshi_orderbook(
+    ticker: str,
+    request: Request,
+    start_time: int | None = Query(default=None),
+    end_time: int | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    auth: dict = Depends(get_current_user_from_api_key),
+):
+    """Historical orderbook snapshots for a Kalshi market."""
+    require_scope(auth, "data:read")
+    dome = _get_dome(request)
+    try:
+        return await dome.get_kalshi_orderbook_snapshots(
+            ticker, start_time=start_time, end_time=end_time, limit=limit,
+        )
+    except Exception as e:
+        raise HTTPException(502, detail=f"Dome API error: {e}")
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Cross-Platform Sport Matching
+# ══════════════════════════════════════════════════════════════════
+
+@router.get("/matching/{sport}")
+async def get_sport_matches(
+    sport: str,
+    request: Request,
+    date: str = Query(..., description="Date in YYYY-MM-DD format"),
+    auth: dict = Depends(get_current_user_from_api_key),
+):
+    """Find equivalent markets across Polymarket and Kalshi for a sport on a date."""
+    require_scope(auth, "data:read")
+    dome = _get_dome(request)
+    try:
+        return await dome.get_sport_matches(sport, date)
+    except Exception as e:
+        raise HTTPException(502, detail=f"Dome API error: {e}")

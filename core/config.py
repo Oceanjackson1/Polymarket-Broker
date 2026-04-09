@@ -87,6 +87,19 @@ class Settings(BaseSettings):
     tg_admin_chat_ids: str = ""  # comma-separated admin chat IDs
     tg_miniapp_url: str = ""     # e.g. https://polydesk.eu.cc/tg
 
+    # Croo marketplace (dev only — requires Feilian VPN)
+    croo_api_base: str = "https://dev-api.croo.network"
+    croo_ws_url: str = "wss://dev-api.croo.network/ws"
+    croo_rpc_url: str = ""              # dev chain RPC, must be set in .env
+    croo_payment_token: str = ""        # dev USDC token address, must be set in .env
+    croo_wallet_private_key: str = ""   # used ONLY by setup_cli
+    croo_sdk_key: str = ""              # runtime fallback when .credentials.json is missing
+    croo_agent_id: str = ""             # runtime fallback when .credentials.json is missing
+    croo_system_user_id: str = "croo:provider"
+    croo_handler_timeout_default_s: int = 60
+    croo_handler_timeout_analysis_s: int = 120
+    croo_handler_timeout_strategy_s: int = 120
+
     # App
     environment: str = "development"
     api_v1_prefix: str = "/api/v1"

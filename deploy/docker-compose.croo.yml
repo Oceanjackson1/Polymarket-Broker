@@ -1,0 +1,75 @@
+# Independent compose stack for the Croo Provider runtime.
+#
+# This stack is intentionally separate from the existing `docker-compose.yml`
+# (postgres + redis + api) so that the Croo provider can be deployed and
+# restarted on its own without affecting any other container on the host.
+#
+# Stack name: polymarket-broker-croo
+# Container names are all prefixed `polymarket-broker-croo-*` so they cannot
+# collide with any other agent stack on the same machine.
+#
+# Resources spawned:
+#   - polymarket-broker-croo-postgres   (private DB, no host port binding)
+#   - polymarket-broker-croo-redis      (no host port binding)
+#   - polymarket-broker-croo-agent      (croo_agent runtime, outbound only)
+#
+# Usage:
+#   cd /opt/polymarket-broker
+#   docker compose -f deploy/docker-compose.croo.yml up -d --build
+#   docker compose -f deploy/docker-compose.croo.yml logs -f croo_agent
+
+name: polymarket-broker-croo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: polymarket-broker-croo-postgres
+    environment:
+      POSTGRES_USER: broker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-broker_secure_pwd}
+      POSTGRES_DB: broker
+    volumes:
+      - polymarket_broker_croo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U broker"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: polymarket-broker-croo-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  croo_agent:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.croo
+    image: polymarket-broker-croo-agent:latest
+    container_name: polymarket-broker-croo-agent
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://broker:${POSTGRES_PASSWORD:-broker_secure_pwd}@postgres:5432/broker
+      REDIS_URL: redis://redis:6379/0
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      # `.credentials.json` is gitignored — mounted from the host so the SDK-Key
+      # never gets baked into the image. Mounted read-only.
+      - ../croo_agent/.credentials.json:/app/croo_agent/.credentials.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  polymarket_broker_croo_pgdata:
+    name: polymarket_broker_croo_pgdata

@@ -1,0 +1,30 @@
+# Dockerfile for the Croo Provider runtime (`python -m croo_agent`).
+#
+# Built and run via `deploy/docker-compose.croo.yml`. Independent from the
+# main FastAPI broker image (`Dockerfile`) so that this stack can be
+# deployed and restarted without touching the existing API server.
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc libpq-dev git ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Python deps — copy first so the layer is cached when only app code changes
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# App code
+COPY . .
+
+# Drop root
+RUN useradd -m broker && chown -R broker:broker /app
+USER broker
+
+# `.credentials.json` is mounted at runtime via docker-compose volume
+# (gitignored — never baked into the image).
+
+CMD ["python", "-m", "croo_agent"]

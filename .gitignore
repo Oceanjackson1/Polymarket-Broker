@@ -1,6 +1,8 @@
 .env
 # .env.test is committed intentionally (test-only values, no real secrets)
 !.env.test
+croo_agent/.credentials.json
+croo_agent/.buyer_credentials.json
 .venv/
 venv/
 __pycache__/
